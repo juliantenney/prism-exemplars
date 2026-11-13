@@ -1,0 +1,51 @@
+{
+  "id": "understanding-lagrange-multipliers",
+  "title": "Understanding Lagrange Multipliers",
+  "teaching_need": "First-year students can perform the algebra of constrained optimisation without understanding why the multiplier method works, what its geometric relationships mean or when its conclusions are justified.",
+  "intended_capability": "Interpret constrained optimisation problems; connect feasible sets, gradients, tangency and multiplier equations; solve manageable problems accurately; distinguish stationary candidates from proven optima; recognise limitations; and transfer the method independently.",
+  "summary": "A 90-minute Learning Journey for first-year quantitative learners that moves from constrained-choice reasoning through geometry and formal equations to diagnosing unsupported claims and independently establishing a justified global optimum—without a Learning Journal.",
+  "primary_pattern": "Concrete → Visual → Formal → Transfer, with explicit evaluation of mathematical claims before independent transfer",
+  "supporting_patterns": [
+    "Concrete constrained-choice reasoning before formal multiplier algebra",
+    "Visual treatment of gradients, tangency and feasible sets",
+    "Connection from geometry to formal Lagrange equations",
+    "Explicit evaluation of what a calculation does and does not prove",
+    "Diagnosis of mathematical claims and unsupported conclusions",
+    "Independent transfer requiring justification of a global optimum, not only a stationary candidate"
+  ],
+  "learning_sequence": [
+    "Overview — orientation to constrained optimisation and journey expectations",
+    "Why the constraint matters (Interactive) — constrained-choice reasoning with a familiar problem",
+    "Seeing gradients and tangency (Interactive) — visual relationships among feasible sets, gradients and optima",
+    "From geometry to the multiplier equations (Expository) — connect geometric insight to formal equations",
+    "What does the calculation prove? (Expository) — distinguish candidate solutions from justified optima",
+    "Diagnosing mathematical claims (Assessment Pack) — evaluate claims about constrained optimisation",
+    "Independent constrained optimisation (Assessment Pack) — apply the method and justify a global optimum"
+  ],
+  "transferable_principle": "When learners can execute a formal procedure without knowing what it justifies, develop judgement by moving Concrete → Visual → Formal → Transfer and inserting an explicit evaluation of claims before independent application—so the culminating task requires establishing and justifying a global optimum, not merely calculating a stationary candidate. The Lagrange topic is the vehicle; the judgement-before-transfer logic travels.",
+  "product_count": 6,
+  "duration_minutes": 90,
+  "status": "candidate",
+  "launch": "published/index.html",
+  "original_brief": null,
+  "adaptation_prompt": "adaptation-prompt.md",
+  "design_notes": "design-notes.md",
+  "_field_origins": {
+    "id": "user_supplied",
+    "title": "extracted",
+    "teaching_need": "user_supplied",
+    "intended_capability": "user_supplied",
+    "summary": "commentary",
+    "primary_pattern": "user_supplied",
+    "supporting_patterns": "commentary",
+    "learning_sequence": "extracted",
+    "transferable_principle": "commentary",
+    "product_count": "extracted",
+    "duration_minutes": "user_supplied",
+    "status": "user_supplied",
+    "launch": "extracted",
+    "original_brief": "extracted",
+    "adaptation_prompt": "commentary",
+    "design_notes": "commentary"
+  }
+}
