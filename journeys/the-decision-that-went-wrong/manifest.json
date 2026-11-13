@@ -1,0 +1,50 @@
+{
+  "id": "the-decision-that-went-wrong",
+  "title": "The Decision That Went Wrong",
+  "teaching_need": "Learners often struggle to make a defensible institutional recommendation when evidence is incomplete, conflicting and consequential—mistaking early promising results for settled proof, overlooking stakeholder impacts, or treating uncertainty as a reason to avoid judgement.",
+  "intended_capability": "Interpret conflicting quantitative and qualitative evidence in a developing institutional case, weigh stakeholder perspectives and trade-offs, and reach a justified recommendation under genuine uncertainty.",
+  "summary": "A 90-minute Learning Journey set in a fictional UK university considering an AI-assisted student support system. Learners meet early pilot evidence, examine it more carefully, encounter later conflicting findings and stakeholder perspectives, then produce a committee recommendation that remains open to more than one defensible outcome.",
+  "primary_pattern": "Evidence-informed decision-making under uncertainty through progressive disclosure of conflicting evidence",
+  "supporting_patterns": [
+    "Progressive disclosure of institutional evidence",
+    "Critical interpretation of quantitative and qualitative evaluation findings",
+    "Attention to stakeholder perspectives and consequences",
+    "Reasoning under uncertainty with genuine ambiguity preserved",
+    "Weighing trade-offs and unintended consequences",
+    "Justified recommendation with opportunity to reconsider earlier judgement"
+  ],
+  "learning_sequence": [
+    "Overview — orientation to the institutional case and expectations",
+    "The Promising Pilot (Interactive) — make sense of early evaluation evidence and form an initial case",
+    "Reading the Evidence Carefully (Expository) — examine what the figures and records can and cannot support",
+    "When the Evidence Changes (Interactive) — weigh later findings, benefits, concerns and reconsider earlier judgement",
+    "The People Behind the Decision (Interactive) — consider stakeholder consequences and what the evidence can support",
+    "The Committee Recommendation (Assessment Pack) — choose among options and justify a recommendation under uncertainty"
+  ],
+  "transferable_principle": "When there is no single unambiguously correct decision, develop judgement by revealing evidence progressively, distinguishing observation from interpretation, bringing stakeholder consequences into view, and requiring a justified recommendation that can survive new or conflicting information. The institutional AI scenario is the vehicle, not the transferable core.",
+  "product_count": 5,
+  "duration_minutes": 90,
+  "status": "candidate",
+  "launch": "published/index.html",
+  "original_brief": "original-brief.md",
+  "adaptation_prompt": "adaptation-prompt.md",
+  "design_notes": "design-notes.md",
+  "_field_origins": {
+    "id": "user_supplied",
+    "title": "extracted",
+    "teaching_need": "commentary",
+    "intended_capability": "extracted",
+    "summary": "commentary",
+    "primary_pattern": "commentary",
+    "supporting_patterns": "commentary",
+    "learning_sequence": "extracted",
+    "transferable_principle": "commentary",
+    "product_count": "extracted",
+    "duration_minutes": "extracted",
+    "status": "user_supplied",
+    "launch": "extracted",
+    "original_brief": "user_supplied",
+    "adaptation_prompt": "commentary",
+    "design_notes": "commentary"
+  }
+}

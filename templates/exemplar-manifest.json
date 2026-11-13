@@ -1,0 +1,42 @@
+{
+  "id": "example-journey-id",
+  "title": "Example Learning Journey Title",
+  "teaching_need": "The teaching problem or requirement that motivated this design.",
+  "intended_capability": "What learners should become better able to do.",
+  "summary": "Short description of the journey for catalogue readers.",
+  "primary_pattern": "Principal pedagogical design mechanism.",
+  "supporting_patterns": [
+    "Another relevant mechanism"
+  ],
+  "learning_sequence": [
+    "Step 1 — short description of the first learner activity",
+    "Step 2 — short description of the next activity"
+  ],
+  "transferable_principle": "What another lecturer could reuse in a different context.",
+  "product_count": 0,
+  "duration_minutes": null,
+  "status": "candidate",
+  "launch": "published/index.html",
+  "original_brief": null,
+  "adaptation_prompt": "adaptation-prompt.md",
+  "design_notes": "design-notes.md",
+  "_field_origins": {
+    "comment": "Remove _field_origins from published manifests if preferred; keep during drafting. Values: extracted | user_supplied | commentary. Never invent an original brief.",
+    "id": "user_supplied",
+    "title": "extracted",
+    "teaching_need": "user_supplied",
+    "intended_capability": "user_supplied",
+    "summary": "user_supplied",
+    "primary_pattern": "commentary",
+    "supporting_patterns": "commentary",
+    "learning_sequence": "extracted",
+    "transferable_principle": "commentary",
+    "product_count": "extracted",
+    "duration_minutes": "extracted",
+    "status": "user_supplied",
+    "launch": "extracted",
+    "original_brief": "extracted",
+    "adaptation_prompt": "commentary",
+    "design_notes": "commentary"
+  }
+}

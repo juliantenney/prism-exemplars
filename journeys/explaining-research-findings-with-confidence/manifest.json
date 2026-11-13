@@ -1,0 +1,52 @@
+{
+  "id": "explaining-research-findings-with-confidence",
+  "title": "Explaining Research Findings with Confidence",
+  "teaching_need": "Undergraduates often struggle to turn research evidence into a clear, accurate explanation for non-specialists—mixing findings with interpretation, overstating certainty, and improving work without developing evaluative judgement.",
+  "intended_capability": "Interpret and communicate a research finding accurately and appropriately for a non-specialist audience, and improve an explanation through comparison, self-diagnosis and reasoned revision.",
+  "summary": "A 90-minute Learning Journey in which learners interpret a self-contained research study, write a first explanation, compare contrasting examples against quality criteria, diagnose and revise their own work, then account for what changed—supported by a Learning Journal that preserves learner-authored artefacts.",
+  "primary_pattern": "Evaluative judgement through comparison, self-diagnosis and revision (draft → judge → revise)",
+  "supporting_patterns": [
+    "Initial independent performance before worked examples or detailed evaluative guidance",
+    "Comparison of contrasting explanations against explicit quality criteria",
+    "Self-assessment and diagnosis of own work",
+    "Iterative improvement of a retained first attempt",
+    "Reflection on changes made and why they matter",
+    "Learning Journal preserving learner-authored work across the sequence"
+  ],
+  "learning_sequence": [
+    "Overview — orientation to the journey and expectations",
+    "Interpret the research evidence (Interactive) — build understanding of a self-contained illustrative study",
+    "Write your first explanation (Assessment Pack) — independent explanation for a non-specialist reader, retained as a baseline",
+    "Compare explanations and judge their quality (Interactive) — contrast examples and practise comparative judgement",
+    "Diagnose your explanation (Assessment Pack) — apply criteria to your own first attempt",
+    "Revise your explanation (Assessment Pack) — improve the retained baseline in light of diagnosis",
+    "Explain what changed and why (Expository) — account for revisions and their significance",
+    "Learning Journal — preserve and revisit learner-authored work across the journey"
+  ],
+  "transferable_principle": "When the goal is evaluative judgement rather than a single correct answer, have learners produce an independent attempt first, then use comparison against explicit criteria, self-diagnosis and revision—preserving the original work so improvement can be reasoned about. The subject matter and exact activities can change; the draft–judge–revise logic travels.",
+  "product_count": 6,
+  "duration_minutes": 90,
+  "status": "candidate",
+  "launch": "published/index.html",
+  "original_brief": "original-brief.md",
+  "adaptation_prompt": "adaptation-prompt.md",
+  "design_notes": "design-notes.md",
+  "_field_origins": {
+    "id": "user_supplied",
+    "title": "extracted",
+    "teaching_need": "commentary",
+    "intended_capability": "extracted",
+    "summary": "commentary",
+    "primary_pattern": "user_supplied",
+    "supporting_patterns": "user_supplied",
+    "learning_sequence": "extracted",
+    "transferable_principle": "commentary",
+    "product_count": "extracted",
+    "duration_minutes": "extracted",
+    "status": "user_supplied",
+    "launch": "extracted",
+    "original_brief": "user_supplied",
+    "adaptation_prompt": "commentary",
+    "design_notes": "commentary"
+  }
+}

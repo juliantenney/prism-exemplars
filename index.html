@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>PRISM Exemplar Corpus</title>
+    <meta
+      name="description"
+      content="A corpus of Learning Journey exemplars for lecturers, learning designers, and educational technologists."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="assets/styles.css" />
+  </head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <div class="site-header__inner">
+        <p class="site-brand">PRISM Exemplar Corpus</p>
+        <p class="site-tagline">
+          Pedagogical designs for higher education, shown through completed Learning Journeys
+        </p>
+      </div>
+    </header>
+
+    <main id="main" class="site-main">
+      <section class="intro" aria-labelledby="intro-heading">
+        <h1 id="intro-heading">Learning Journey exemplars</h1>
+        <p>
+          This corpus collects completed PRISM Learning Journeys so lecturers, learning
+          designers, and educational technologists can study how a teaching need was turned
+          into a coherent sequence of learner activities.
+        </p>
+        <p>
+          Each entry emphasises the design behind the journey—the teaching need, the capability
+          it develops, the patterns at work, and a principle you can transfer—then offers a
+          direct launch into the published experience and a prompt you can adapt for your own
+          brief.
+        </p>
+      </section>
+
+      <section class="catalogue" aria-labelledby="catalogue-heading">
+        <div class="catalogue__header">
+          <h2 id="catalogue-heading">Catalogue</h2>
+          <p id="catalogue-count" class="catalogue__count" hidden></p>
+        </div>
+        <div
+          id="catalogue-status"
+          class="catalogue__status"
+          role="status"
+          aria-live="polite"
+        >
+          Loading catalogue…
+        </div>
+        <div id="catalogue-root" class="catalogue__list" hidden></div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <p>
+        Metadata is maintained per exemplar under <code>journeys/</code>. The homepage reads
+        <code>catalogue.json</code> only. See <code>docs/</code> for add, update, and remove
+        procedures.
+      </p>
+    </footer>
+
+    <script src="assets/catalogue.js" defer></script>
+  </body>
+</html>
