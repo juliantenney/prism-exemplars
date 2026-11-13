@@ -155,8 +155,78 @@
     );
   }
 
+  /** Stable fragment target for an exemplar card (matches catalogue id). */
+  function exemplarAnchorId(exemplarId) {
+    var raw = String(exemplarId || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, "-")
+      .replace(/^-+|-+$/g, "");
+    return "exemplar-" + (raw || "item");
+  }
+
+  function renderBrowse(exemplars) {
+    var section = $("browse-exemplars");
+    var root = $("browse-root");
+    if (!root) return;
+
+    if (!Array.isArray(exemplars) || !exemplars.length) {
+      root.innerHTML = "";
+      if (section) section.hidden = true;
+      return;
+    }
+
+    root.innerHTML =
+      '<ol class="browse-list">' +
+      exemplars
+        .map(function (exemplar, index) {
+          var id = String(exemplar.id || "exemplar-" + index);
+          var anchor = exemplarAnchorId(id);
+          var title = exemplar.title || id;
+          var pattern = exemplar.primary_pattern || "";
+          return (
+            "<li>" +
+            '<a class="browse-list__link" href="#' +
+            escapeHtml(anchor) +
+            '">' +
+            '<span class="browse-list__title">' +
+            escapeHtml(title) +
+            "</span>" +
+            (pattern
+              ? '<span class="browse-list__pattern">' +
+                escapeHtml(pattern) +
+                "</span>"
+              : "") +
+            "</a>" +
+            "</li>"
+          );
+        })
+        .join("") +
+      "</ol>";
+
+    if (section) section.hidden = false;
+  }
+
+  function focusCatalogueTarget() {
+    var hash = String(window.location.hash || "").replace(/^#/, "");
+    if (!hash || hash.indexOf("exemplar-") !== 0) return;
+    var el = document.getElementById(hash);
+    if (!el) return;
+    if (typeof el.focus === "function") {
+      try {
+        el.focus({ preventScroll: true });
+      } catch (_err) {
+        el.focus();
+      }
+    }
+    if (typeof el.scrollIntoView === "function") {
+      el.scrollIntoView({ block: "start" });
+    }
+  }
+
   function renderCard(exemplar, index) {
     var id = String(exemplar.id || "exemplar-" + index);
+    var anchorId = exemplarAnchorId(id);
     var path = String(exemplar.path || "").replace(/\/?$/, "/");
     var launchRel = String(exemplar.launch || "published/index.html");
     var launchHref = joinUrl(path, launchRel);
@@ -233,7 +303,9 @@
       : "";
 
     return (
-      '<article class="exemplar-card" data-exemplar-id="' +
+      '<article class="exemplar-card" id="' +
+      escapeHtml(anchorId) +
+      '" tabindex="-1" data-exemplar-id="' +
       escapeHtml(id) +
       '">' +
       '<div class="exemplar-card__top">' +
@@ -427,6 +499,7 @@
 
     root.hidden = false;
     if (!exemplars.length) {
+      renderBrowse([]);
       root.innerHTML = renderEmpty();
       if (countEl) {
         countEl.hidden = false;
@@ -435,6 +508,7 @@
       return;
     }
 
+    renderBrowse(exemplars);
     root.innerHTML = exemplars.map(renderCard).join("");
     if (countEl) {
       countEl.hidden = false;
@@ -442,9 +516,12 @@
         exemplars.length === 1 ? "1 exemplar" : exemplars.length + " exemplars";
     }
     bindInteractions(root);
+    focusCatalogueTarget();
   }
 
   function init() {
+    window.addEventListener("hashchange", focusCatalogueTarget);
+
     fetch(CATALOGUE_URL, { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
@@ -452,6 +529,7 @@
       })
       .then(renderCatalogue)
       .catch(function () {
+        renderBrowse([]);
         setStatus(
           "Could not load catalogue.json. Open this site over HTTP (for example https://juliantenney.github.io/prism-exemplars/ or http://localhost/prism-exemplars/) rather than as a local file.",
           true
