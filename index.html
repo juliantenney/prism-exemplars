@@ -8,13 +8,45 @@
       name="description"
       content="A corpus of Learning Journey exemplars for lecturers, learning designers, and educational technologists."
     />
+    <meta name="prism-exemplars-assets" content="46b69447dc" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Source+Sans+3:ital,wght@0,400;0,600;0,700;1,400&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="assets/styles.css" />
+    <link rel="stylesheet" href="assets/styles.css?v=c905a6437d" />
+    <script>
+      /* If GitHub Pages/browser still has a stale homepage, reload once with a bust query. */
+      (function () {
+        var meta = document.querySelector('meta[name="prism-exemplars-assets"]');
+        var baked = meta && meta.getAttribute("content");
+        if (!baked || baked === "pending") return;
+        fetch("assets/version.json", { cache: "no-store" })
+          .then(function (res) {
+            return res.ok ? res.json() : null;
+          })
+          .then(function (remote) {
+            if (!remote || !remote.rev) return;
+            var url = new URL(window.location.href);
+            if (remote.rev === baked) {
+              if (url.searchParams.has("assets")) {
+                url.searchParams.delete("assets");
+                window.history.replaceState(
+                  null,
+                  "",
+                  url.pathname + url.search + url.hash
+                );
+              }
+              return;
+            }
+            if (url.searchParams.get("assets") === remote.rev) return;
+            url.searchParams.set("assets", remote.rev);
+            window.location.replace(url.toString());
+          })
+          .catch(function () {});
+      })();
+    </script>
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
@@ -81,6 +113,6 @@
       </p>
     </footer>
 
-    <script src="assets/catalogue.js" defer></script>
+    <script src="assets/catalogue.js?v=5b60f5e583" defer></script>
   </body>
 </html>

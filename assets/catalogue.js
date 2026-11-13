@@ -522,7 +522,7 @@
   function init() {
     window.addEventListener("hashchange", focusCatalogueTarget);
 
-    fetch(CATALOGUE_URL, { cache: "no-store" })
+    fetch(CATALOGUE_URL + "?_=" + String(Date.now()), { cache: "no-store" })
       .then(function (res) {
         if (!res.ok) throw new Error("HTTP " + res.status);
         return res.json();

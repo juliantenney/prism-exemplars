@@ -18,7 +18,8 @@ Use when an existing corpus entry needs refreshed package files, corrected metad
 4. Update `manifest.json` fields that must change. Keep origins accurate (extracted / user_supplied / commentary).
 5. Update `design-notes.md` and/or `adaptation-prompt.md` when commentary should change.
 6. Regenerate `catalogue.json` from all manifests (same procedure as [adding-an-exemplar.md](adding-an-exemplar.md) step 9).
-7. Verify the homepage card, launch link, brief expand (if any), and adaptation prompt copy.
+7. If `assets/styles.css` or `assets/catalogue.js` changed, run `node scripts/stamp-asset-cache.js` so GitHub Pages visitors pick up new homepage assets without a hard refresh.
+8. Verify the homepage card, launch link, brief expand (if any), and adaptation prompt copy.
 
 ## Partial updates
 

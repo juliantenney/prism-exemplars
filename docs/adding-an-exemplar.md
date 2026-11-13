@@ -109,7 +109,17 @@ Each catalogue entry copies the homepage fields from the manifest and adds:
 
 Do not hand-edit catalogue fields as a second source of truth.
 
-### 10. Verify
+### 10. Homepage asset cache (when CSS/JS changed)
+
+If this change also edited `assets/styles.css` or `assets/catalogue.js`, run:
+
+```text
+node scripts/stamp-asset-cache.js
+```
+
+This refreshes content-hash query strings and `assets/version.json` so GitHub Pages clients are less likely to keep a stale homepage shell.
+
+### 11. Verify
 
 1. Open `http://localhost/prism-exemplars/`.
 2. Confirm the new card appears with teaching need, capability, patterns, and transferable principle.
