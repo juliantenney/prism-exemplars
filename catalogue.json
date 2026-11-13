@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-13T11:10:36.280Z",
+  "generated_at": "2026-11-13T11:12:31.807Z",
   "exemplars": [
     {
       "id": "explaining-research-findings-with-confidence",
@@ -100,7 +100,7 @@
       "duration_minutes": 90,
       "status": "candidate",
       "launch": "published/index.html",
-      "original_brief": null,
+      "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
       "design_notes": "design-notes.md",
       "path": "journeys/understanding-lagrange-multipliers/",

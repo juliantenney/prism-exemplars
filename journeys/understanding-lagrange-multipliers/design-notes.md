@@ -1,6 +1,6 @@
 # Design notes — Understanding Lagrange Multipliers
 
-These notes are **retrospective design commentary**. They are not the original commissioning brief.
+These notes are **retrospective design commentary**. They are not the original commissioning brief. The original brief is preserved separately in `original-brief.md`.
 
 ## Extracted from the project
 
@@ -19,8 +19,8 @@ These notes are **retrospective design commentary**. They are not the original c
 
 ## Supplied by the user
 
-- **Teaching need / intended capability / primary pattern / audience / duration:** provided in the corpus-publication request (educational framing).
-- **Original Requirements-stage prompt:** not attached in the conversation that commissioned this corpus entry; `original_brief` is therefore `null` (a reconstructed brief is never presented as original).
+- **Original commissioning brief:** PURPOSE / FOCUS, LEARNERS / AUDIENCE, LEARNING TIME, DURATION, and CONSTRAINTS / ADDITIONAL CONTEXT (verbatim in `original-brief.md`).
+- **Teaching need / intended capability / primary pattern / audience / duration:** aligned with that brief and the corpus-publication educational framing.
 - **Status:** `candidate` (no new post-fix certification asserted; prior static QA is not restated as a fresh score).
 
 ## Retrospective commentary

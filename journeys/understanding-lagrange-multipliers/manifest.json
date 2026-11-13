@@ -27,7 +27,7 @@
   "duration_minutes": 90,
   "status": "candidate",
   "launch": "published/index.html",
-  "original_brief": null,
+  "original_brief": "original-brief.md",
   "adaptation_prompt": "adaptation-prompt.md",
   "design_notes": "design-notes.md",
   "_field_origins": {
@@ -44,7 +44,7 @@
     "duration_minutes": "user_supplied",
     "status": "user_supplied",
     "launch": "extracted",
-    "original_brief": "extracted",
+    "original_brief": "user_supplied",
     "adaptation_prompt": "commentary",
     "design_notes": "commentary"
   }
