@@ -27,6 +27,7 @@
   "product_count": 6,
   "duration_minutes": 90,
   "status": "candidate",
+  "created_with_prism_version": "Beta 0.9",
   "launch": "published/index.html",
   "original_brief": "original-brief.md",
   "adaptation_prompt": "adaptation-prompt.md",
@@ -47,6 +48,7 @@
     "launch": "extracted",
     "original_brief": "user_supplied",
     "adaptation_prompt": "commentary",
-    "design_notes": "commentary"
+    "design_notes": "commentary",
+    "created_with_prism_version": "user_supplied"
   }
 }

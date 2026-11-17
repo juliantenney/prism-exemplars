@@ -2728,6 +2728,8 @@ function buildCanonicalFunctionEnumVariant(archetype, beatSequence, options) {
       beatOptions.materialTypes = ["worked_example"];
     }
     if (sourceFunction === "worked_thinking" && !hasExample) {
+      // sample_output may still bind here when verification is absent; composition
+      // defers check-typed / post-attempt sample_output out of Learn into Check.
       beatOptions.materialTypes = hasPrimaryTextOwner
         ? ["worked_example", "sample_output", "modelling_note"]
         : ["text", "worked_example", "sample_output", "modelling_note"];
@@ -5453,9 +5455,10 @@ module.exports = {
  * schema/internal-id chrome suppressed; intellectual content preserved).
  *
  * Representation-specification fields (representation type, compact visual
- * labels, timeline element objects, accessible-equivalent headings, and
- * similar) are not learner table columns or headings. Their educational
- * prose, ordered timeline steps, and text equivalents still render.
+ * labels, timeline element objects, accessible-equivalent headings, format
+ * descriptors, and similar) are not learner table columns or headings. Their
+ * educational prose, ordered comparison cases, and text equivalents still
+ * render without production chrome such as "Format" or "Interpretive statement".
  */
 
 var html = __bundleRequire("lib/learner-renderer-vnext/render-html-utils.js");
@@ -6324,7 +6327,12 @@ function tabularColumnsAndRows(body) {
         }
       }
       var recoveredKeys = sampleKeys.filter(function (k) {
-        return isMeaningfulColumnKey(k);
+        return (
+          isMeaningfulColumnKey(k) &&
+          !isRepresentationOmissionKey(k) &&
+          !isUnlabeledProseKey(k) &&
+          !isUnlabeledStructureKey(k)
+        );
       });
       if (!recoveredKeys.length) {
         return {
@@ -6939,6 +6947,19 @@ function buildExpositionStructuredMaterial(source, sectionId, sourceOrder) {
 
   if (isTabularBody(body)) {
     var table = tabularColumnsAndRows(body);
+    var tabularCompanion = {};
+    Object.keys(body).forEach(function (key) {
+      var token = keyMatchToken(key);
+      if (
+        token === "columns" ||
+        token === "rows" ||
+        token === "title" ||
+        token === "columnheaders"
+      ) {
+        return;
+      }
+      tabularCompanion[key] = body[key];
+    });
     return {
       id: materialId,
       kind: kind || "comparison_table",
@@ -6950,6 +6971,8 @@ function buildExpositionStructuredMaterial(source, sectionId, sourceOrder) {
       caption: text(body.caption),
       columns: table.columns,
       rows: table.rows,
+      companion: tabularCompanion,
+      accessibleText: tableAccessibleAlternative(body),
       publicationFailure: table.publicationFailure || "",
       _authorFormalNotes: formalNotes
     };
@@ -7328,20 +7351,31 @@ function isConstructionInstructionKey(key) {
 }
 
 /**
- * Figure-production instructions. Omit the field; the value is not learner prose.
+ * Figure-production / material-spec instructions. Omit the field; the value is
+ * not learner chapter prose (or is only a production descriptor).
  */
 function isRepresentationOmissionKey(key) {
   var token = keyMatchToken(key);
   return (
     token === "representationtype" ||
     token === "compactvisuallabel" ||
+    token === "format" ||
+    token === "charttype" ||
+    token === "datastatus" ||
+    token === "comparisonfocus" ||
+    token === "columnheaders" ||
+    token === "surfacedescription" ||
+    token === "visibleelements" ||
+    token === "seriesid" ||
+    token === "linestyle" ||
     isConstructionInstructionKey(key)
   );
 }
 
 /**
- * Educational prose stored under a representation-spec name.
- * Keep the sentences; do not use the spec name as a heading or column.
+ * Educational prose stored under a representation-spec or scaffold field name.
+ * Keep the sentences; do not use the schema field name as a learner-facing
+ * heading, definition-list term, or column.
  */
 function isUnlabeledProseKey(key) {
   var token = keyMatchToken(key);
@@ -7349,16 +7383,64 @@ function isUnlabeledProseKey(key) {
     token === "centralconcept" ||
     token === "centralsynthesis" ||
     token === "accessibletextequivalent" ||
+    token === "textequivalent" ||
     token === "temporalstructure" ||
     token === "investigationdirection" ||
     token === "relationshiplabel" ||
+    token === "relationship" ||
     token === "sharedclinicalcontext" ||
     token === "detaileddescription" ||
     token === "alttext" ||
     token === "explanatorycaption" ||
     token === "accessibledescription" ||
-    token === "caption"
+    token === "caption" ||
+    token === "interpretivestatement" ||
+    token === "interpretation" ||
+    token === "introduction" ||
+    token === "intro" ||
+    token === "preamble" ||
+    token === "opening" ||
+    token === "closing" ||
+    token === "conclusion" ||
+    token === "wrapup" ||
+    token === "coda" ||
+    token === "conceptualdistinction" ||
+    token === "conceptualdistinctions"
   );
+}
+
+/**
+ * Authored heading text stored under a generic "heading" key.
+ * Publish the value as the heading; never display the word "Heading".
+ */
+function isPromotedHeadingKey(key) {
+  return keyMatchToken(key) === "heading";
+}
+
+function authoredSectionTitle(obj) {
+  if (!isPlainObject(obj)) return "";
+  var heading = text(obj.heading);
+  if (heading && !isMachineToken(heading) && !isInternalMaterialId(heading)) {
+    return heading;
+  }
+  var title = text(obj.title);
+  if (title && !isMachineToken(title) && !isInternalMaterialId(title)) {
+    return title;
+  }
+  return "";
+}
+
+function omitPromotedTitleFields(obj, sectionTitle) {
+  if (!isPlainObject(obj) || !sectionTitle) return obj;
+  var next = null;
+  Object.keys(obj).forEach(function (key) {
+    var tok = keyMatchToken(key);
+    if (tok !== "heading" && tok !== "title") return;
+    if (text(obj[key]) !== sectionTitle) return;
+    if (!next) next = Object.assign({}, obj);
+    delete next[key];
+  });
+  return next || obj;
 }
 
 /**
@@ -7373,7 +7455,10 @@ function isUnlabeledStructureKey(key) {
     token === "interpretiveannotations" ||
     token === "timeaxis" ||
     token === "panels" ||
-    token === "panel"
+    token === "panel" ||
+    token === "representations" ||
+    token === "alternatives" ||
+    token === "cases"
   );
 }
 
@@ -7874,18 +7959,102 @@ function tableHasAccessibleSemantics(columns, rows) {
  * A text that does not name those rows is additional information and stays visible.
  */
 function accessibleTextRestatesTable(accessibleText, rows) {
-  var labels = [];
-  rows.forEach(function (row) {
-    var cells = Array.isArray(row) ? row : [];
-    if (!cells.length) return;
-    var label = cellText(cells[0]);
-    if (phraseKey(label).length >= 3) labels.push(label);
-  });
+  var labels = tableRowLabels(rows);
   if (!labels.length) return false;
   var matched = labels.filter(function (label) {
     return phraseOccurs(accessibleText, label);
   });
   return matched.length * 2 >= labels.length;
+}
+
+function tableRowLabels(rows) {
+  var labels = [];
+  (Array.isArray(rows) ? rows : []).forEach(function (row) {
+    var cells = Array.isArray(row) ? row : [];
+    if (!cells.length) return;
+    var label = cellText(cells[0]);
+    if (phraseKey(label).length >= 3) labels.push(label);
+  });
+  return labels;
+}
+
+function splitProseSentences(value) {
+  var normalized = String(value || "").replace(/\s+/g, " ").trim();
+  var sentences = [];
+  var start = 0;
+  var i;
+  for (i = 0; i < normalized.length; i++) {
+    var ch = normalized.charAt(i);
+    if (ch !== "." && ch !== "!" && ch !== "?") continue;
+    while (i + 1 < normalized.length && /[.!?]/.test(normalized.charAt(i + 1))) i += 1;
+    var piece = normalized.slice(start, i + 1).trim();
+    if (piece) sentences.push(piece);
+    while (i + 1 < normalized.length && /\s/.test(normalized.charAt(i + 1))) i += 1;
+    start = i + 1;
+  }
+  if (start < normalized.length) {
+    var tail = normalized.slice(start).trim();
+    if (tail) sentences.push(tail);
+  }
+  return sentences;
+}
+
+function contentWords(value) {
+  return phraseKey(value)
+    .split(" ")
+    .filter(function (word) {
+      return word.length > 3;
+    });
+}
+
+function majorityWordsOverlap(sentence, cell) {
+  var sentenceWords = contentWords(sentence);
+  var cellWords = contentWords(cell);
+  if (!sentenceWords.length || cellWords.length < 3) return false;
+  var hit = cellWords.filter(function (word) {
+    return sentenceWords.indexOf(word) !== -1;
+  });
+  return hit.length * 2 >= cellWords.length;
+}
+
+function sentenceCoveredByTable(sentence, rows) {
+  var labels = tableRowLabels(rows);
+  if (
+    labels.some(function (label) {
+      return phraseOccurs(sentence, label);
+    })
+  ) {
+    return true;
+  }
+  var hay = phraseKey(sentence);
+  if (hay.length < 5) return true;
+  return (Array.isArray(rows) ? rows : []).some(function (row) {
+    return (Array.isArray(row) ? row : []).some(function (cell) {
+      var cellPhrase = text(cellText(cell));
+      if (!cellPhrase) return false;
+      if (phraseOccurs(sentence, cellPhrase) || phraseOccurs(cellPhrase, sentence)) {
+        return phraseKey(cellPhrase).length >= 12;
+      }
+      return majorityWordsOverlap(sentence, cellPhrase);
+    });
+  });
+}
+
+/**
+ * When a text equivalent mostly restates the table, keep only a trailing
+ * interpretive coda — final sentences that neither name row labels nor repeat
+ * cell wording already published in the table.
+ */
+function accessibleInterpretiveSurplus(accessibleText, rows) {
+  var sentences = splitProseSentences(accessibleText);
+  if (!sentences.length) return "";
+  var kept = [];
+  var i;
+  for (i = sentences.length - 1; i >= 0; i--) {
+    if (sentenceCoveredByTable(sentences[i], rows)) break;
+    kept.unshift(sentences[i]);
+  }
+  return kept.join(" ").trim();
 }
 
 function accessibleAlternativeHtml(material, columns, rows) {
@@ -7898,10 +8067,21 @@ function accessibleAlternativeHtml(material, columns, rows) {
     tableHasAccessibleSemantics(columns, rows) &&
     accessibleTextRestatesTable(accessibleText, rows)
   ) {
-    return "";
+    accessibleText = accessibleInterpretiveSurplus(accessibleText, rows);
+    if (!accessibleText || accessibleText === caption) return "";
   }
   return (
     '<div data-field="accessible-description">' + renderMarkdownOrPlain(accessibleText) + "</div>"
+  );
+}
+
+function isLeadingCompanionProseKey(key) {
+  var token = keyMatchToken(key);
+  return (
+    token === "introduction" ||
+    token === "intro" ||
+    token === "preamble" ||
+    token === "opening"
   );
 }
 
@@ -7910,7 +8090,9 @@ function renderTable(material) {
   var caption = text(material && material.caption);
   var columns = Array.isArray(material && material.columns) ? material.columns : [];
   var rows = Array.isArray(material && material.rows) ? material.rows : [];
-  var companionHtml = renderCompanionProse(material && material.companion, title);
+  var companionParts = splitCompanionProse(material && material.companion, title);
+  var beforeHtml = renderCompanionProse(companionParts.before, title);
+  var afterHtml = renderCompanionProse(companionParts.after, title);
   var accessibleHtml = accessibleAlternativeHtml(material, columns, rows);
   if (text(material && material.publicationFailure)) {
     return (
@@ -7922,7 +8104,8 @@ function renderTable(material) {
       '<p class="util-support-note" data-publication-failure="' +
       html.escapeAttribute(text(material.publicationFailure)) +
       '">This table cannot be published because a column has no faithful heading.</p>' +
-      companionHtml +
+      beforeHtml +
+      afterHtml +
       accessibleHtml +
       "</article>"
     );
@@ -7930,11 +8113,28 @@ function renderTable(material) {
   return (
     materialShellOpen(material, "table") +
     (title ? "<h3>" + html.escapeHtml(title) + "</h3>" : "") +
+    beforeHtml +
     expositionDataTableHtml(columns, rows, caption) +
-    companionHtml +
+    afterHtml +
     accessibleHtml +
     "</article>"
   );
+}
+
+function splitCompanionProse(companion, title) {
+  var before = {};
+  var after = {};
+  if (!isPlainObject(companion)) return { before: before, after: after };
+  Object.keys(companion).forEach(function (key) {
+    if (keyMatchToken(key) === "title" && title && text(companion[key]) === title) return;
+    if (keyMatchToken(key) === "caption") return;
+    if (isAccessibleAlternativeKey(key)) return;
+    if (isTableInterpretationSupportKey(key)) return;
+    if (isRepresentationOmissionKey(key)) return;
+    if (isLeadingCompanionProseKey(key)) before[key] = companion[key];
+    else after[key] = companion[key];
+  });
+  return { before: before, after: after };
 }
 
 function renderCompanionProse(companion, title) {
@@ -8448,6 +8648,11 @@ function renderStructuredValue(value, depth) {
         }
         var shown = typeof v === "string" ? learnerFacingScalar(v) || text(v) : text(v);
         if (!shown) return;
+        if (isPromotedHeadingKey(k)) {
+          closeDefinitions();
+          parts.push("<h4>" + html.escapeHtml(shown) + "</h4>");
+          return;
+        }
         if (isUnlabeledProseKey(k)) {
           closeDefinitions();
           parts.push(renderMarkdownOrPlain(shown));
@@ -8467,40 +8672,54 @@ function renderStructuredValue(value, depth) {
     }
     return keys
       .map(function (k) {
-        var inner = renderStructuredValue(value[k], depth + 1);
-        if (!inner) return "";
+        var child = value[k];
         // Nested object/array: omit schema-mechanic headings; keep intellectual ones.
-        if (isPlainObject(value[k]) || Array.isArray(value[k])) {
+        if (isPlainObject(child) || Array.isArray(child)) {
           if (isDisplayGuidanceKey(k) || isRepresentationOmissionKey(k)) return "";
           if (
             isConnectionsKey(k) ||
             isSchemaMechanicKey(k) ||
             isUnlabeledStructureKey(k)
           ) {
-            return inner;
+            return renderStructuredValue(child, depth + 1);
           }
+          var sectionTitle = authoredSectionTitle(child) || humanizeKey(k);
+          var sectionBody = isPlainObject(child)
+            ? omitPromotedTitleFields(child, sectionTitle)
+            : child;
+          var inner = renderStructuredValue(sectionBody, depth + 1);
+          if (!inner) return "";
           return (
             "<section>" +
             "<h4>" +
-            html.escapeHtml(humanizeKey(k)) +
+            html.escapeHtml(sectionTitle) +
             "</h4>" +
             inner +
             "</section>"
           );
         }
+        var innerScalar = renderStructuredValue(child, depth + 1);
+        if (!innerScalar) return "";
         if (isDisplayGuidanceKey(k) || isConnectionsKey(k)) return "";
         if (isRepresentationOmissionKey(k)) return "";
-        if (isUnlabeledProseKey(k)) return inner;
-        if (isDiagramIdentifierKey(k)) {
-          if (isMachineIdentifierCell(value[k])) return "";
-          return inner;
+        if (isPromotedHeadingKey(k)) {
+          var headingText =
+            typeof child === "string" || typeof child === "number"
+              ? text(child)
+              : "";
+          return headingText ? "<h4>" + html.escapeHtml(headingText) + "</h4>" : "";
         }
-        if (isSchemaMechanicKey(k)) return inner;
+        if (isUnlabeledProseKey(k)) return innerScalar;
+        if (isDiagramIdentifierKey(k)) {
+          if (isMachineIdentifierCell(child)) return "";
+          return innerScalar;
+        }
+        if (isSchemaMechanicKey(k)) return innerScalar;
         return (
           "<div><p><strong>" +
           html.escapeHtml(humanizeKey(k)) +
           "</strong></p>" +
-          inner +
+          innerScalar +
           "</div>"
         );
       })
@@ -8834,6 +9053,10 @@ module.exports = {
   isInternalMaterialId: isInternalMaterialId,
   isMachineToken: isMachineToken,
   isSchemaMechanicKey: isSchemaMechanicKey,
+  isRepresentationOmissionKey: isRepresentationOmissionKey,
+  isUnlabeledProseKey: isUnlabeledProseKey,
+  isPromotedHeadingKey: isPromotedHeadingKey,
+  isUnlabeledStructureKey: isUnlabeledStructureKey,
   normalizeKind: normalizeKind,
   humanizeKey: humanizeKey,
   learnerFacingTitle: learnerFacingTitle,
@@ -13019,12 +13242,119 @@ module.exports = {
 /**
  * Read page-level learning sequence fields for composition (non-mutating).
  *
+ * Sprint 98 M5 (Option C): derive attempt-before scaffold material ids from
+ * timeline[].learner_study_flow disclosure metadata.
+ */
+
+var ATTEMPT_DISCLOSURES = Object.freeze({
+  initial_attempt: true,
+  independent_completion: true,
+  independent_reflection: true,
+  independent_transfer_attempt: true
+});
+
+var SCAFFOLD_DISCLOSURES = Object.freeze({
+  optional_scaffold: true,
+  conceptual_scaffold: true
+});
+
+var SCAFFOLD_SUMMARY = Object.freeze({
+  optional_scaffold: "Optional support — open after your first attempt",
+  conceptual_scaffold: "Worked illustration — open after your first attempt"
+});
+
+/**
+ * @param {string} disclosure
+ * @returns {boolean}
+ */
+function isAttemptDisclosure(disclosure) {
+  return !!ATTEMPT_DISCLOSURES[String(disclosure || "").trim()];
+}
+
+/**
+ * @param {string} disclosure
+ * @returns {boolean}
+ */
+function isScaffoldDisclosure(disclosure) {
+  return !!SCAFFOLD_DISCLOSURES[String(disclosure || "").trim()];
+}
+
+/**
+ * Materials whose first study-flow appearance is optional_scaffold or
+ * conceptual_scaffold, after an earlier attempt step that omits them.
+ *
+ * @param {Object[]} flow
+ * @returns {Object.<string,{ disclosure: string, summary: string }>}
+ */
+function attemptBeforeScaffoldsFromStudyFlow(flow) {
+  var scaffolds = Object.create(null);
+  if (!Array.isArray(flow) || !flow.length) return scaffolds;
+
+  var steps = flow
+    .map(function (entry, index) {
+      return {
+        step: Number(entry && entry.step),
+        index: index,
+        disclosure: String((entry && entry.disclosure) || "").trim(),
+        materialIds: Array.isArray(entry && entry.material_ids)
+          ? entry.material_ids
+              .map(function (id) {
+                return String(id || "").trim();
+              })
+              .filter(Boolean)
+          : []
+      };
+    })
+    .sort(function (left, right) {
+      var leftStep = Number.isFinite(left.step) ? left.step : left.index;
+      var rightStep = Number.isFinite(right.step) ? right.step : right.index;
+      if (leftStep !== rightStep) return leftStep - rightStep;
+      return left.index - right.index;
+    });
+
+  var firstDisclosureByMaterial = Object.create(null);
+  steps.forEach(function (step) {
+    step.materialIds.forEach(function (id) {
+      if (!firstDisclosureByMaterial[id]) {
+        firstDisclosureByMaterial[id] = step.disclosure;
+      }
+    });
+  });
+
+  var seenAttemptSteps = [];
+  steps.forEach(function (step) {
+    if (isAttemptDisclosure(step.disclosure)) {
+      seenAttemptSteps.push(step);
+    }
+    step.materialIds.forEach(function (id) {
+      if (firstDisclosureByMaterial[id] !== step.disclosure) return;
+      if (!isScaffoldDisclosure(step.disclosure)) return;
+      var omittedByEarlierAttempt = seenAttemptSteps.some(function (attempt) {
+        return attempt.materialIds.indexOf(id) === -1;
+      });
+      if (!omittedByEarlierAttempt) return;
+      scaffolds[id] = {
+        disclosure: step.disclosure,
+        summary: SCAFFOLD_SUMMARY[step.disclosure] || "Support — open after your first attempt"
+      };
+    });
+  });
+
+  return scaffolds;
+}
+
+/**
  * @param {Object} sourcePage
- * @returns {{ studyPhaseByActivityId: Object.<string,string>, purposeByActivityId: Object.<string,string> }}
+ * @returns {{
+ *   studyPhaseByActivityId: Object.<string,string>,
+ *   purposeByActivityId: Object.<string,string>,
+ *   attemptBeforeScaffoldsByActivityId: Object.<string, Object.<string,{ disclosure: string, summary: string }>>
+ * }}
  */
 function buildSequenceContext(sourcePage) {
   var studyPhaseByActivityId = Object.create(null);
   var purposeByActivityId = Object.create(null);
+  var attemptBeforeScaffoldsByActivityId = Object.create(null);
   var sequence = sourcePage && sourcePage.learning_sequence;
 
   if (sequence && Array.isArray(sequence.study_flow)) {
@@ -13044,17 +13374,179 @@ function buildSequenceContext(sourcePage) {
       var activityId = String((entry && entry.activity_id) || "").trim();
       var purpose = String((entry && entry.purpose) || "").trim();
       if (activityId && purpose) purposeByActivityId[activityId] = purpose;
+      if (!activityId) return;
+      var scaffolds = attemptBeforeScaffoldsFromStudyFlow(entry.learner_study_flow);
+      if (Object.keys(scaffolds).length) {
+        attemptBeforeScaffoldsByActivityId[activityId] = scaffolds;
+      }
     });
   }
 
   return {
     studyPhaseByActivityId: studyPhaseByActivityId,
-    purposeByActivityId: purposeByActivityId
+    purposeByActivityId: purposeByActivityId,
+    attemptBeforeScaffoldsByActivityId: attemptBeforeScaffoldsByActivityId
   };
 }
 
+/**
+ * @param {Object} material
+ * @returns {string}
+ */
+function materialIdOf(material) {
+  if (!material) return "";
+  return String(material.id || material.material_id || "").trim();
+}
+
+/**
+ * @param {string} disclosure
+ * @param {string} summary
+ * @returns {{ mode: string, defaultOpen: boolean, summary: string, studyFlowDisclosure: string }}
+ */
+function scaffoldRevealBehaviour(disclosure, summary) {
+  return {
+    mode: "details",
+    defaultOpen: false,
+    summary: String(summary || SCAFFOLD_SUMMARY[disclosure] || "Support — open after your first attempt"),
+    studyFlowDisclosure: String(disclosure || "").trim()
+  };
+}
+
+/**
+ * Move attempt-before scaffolds out of open Learn and attach them to Do as
+ * collapsed learner-controlled support. No-op when scaffolds map is empty.
+ *
+ * @param {import("./types").CompositionMoment|null} learnMoment
+ * @param {import("./types").CompositionMoment|null} doMoment
+ * @param {Object.<string,{ disclosure: string, summary: string }>|null} scaffolds
+ * @returns {{ learnMoment: import("./types").CompositionMoment|null, doMoment: import("./types").CompositionMoment|null, movedIds: string[] }}
+ */
+function relocateAttemptBeforeScaffolds(learnMoment, doMoment, scaffolds) {
+  if (!scaffolds || !Object.keys(scaffolds).length) {
+    return { learnMoment: learnMoment, doMoment: doMoment, movedIds: [] };
+  }
+
+  var movedItems = [];
+  var movedIds = [];
+  var nextLearn = learnMoment;
+  var learnChanged = false;
+  if (learnMoment && Array.isArray(learnMoment.items)) {
+    var keptItems = [];
+    var keptMaterials = [];
+    learnMoment.items.forEach(function (item) {
+      if (!item || item.kind !== "material" || !item.material) {
+        keptItems.push(item);
+        return;
+      }
+      var id = materialIdOf(item.material);
+      var meta = id ? scaffolds[id] : null;
+      if (!meta) {
+        keptItems.push(item);
+        if (item.material) keptMaterials.push(item.material);
+        return;
+      }
+      movedIds.push(id);
+      movedItems.push({
+        kind: "material",
+        role: item.role || "explanation",
+        material: item.material,
+        reveal: scaffoldRevealBehaviour(meta.disclosure, meta.summary),
+        sourceRef: Object.assign({}, item.sourceRef || {}, {
+          studyFlowScaffold: meta.disclosure
+        })
+      });
+    });
+    if (movedItems.length) {
+      learnChanged = true;
+      if (!keptItems.length) {
+        nextLearn = null;
+      } else {
+        nextLearn = Object.assign({}, learnMoment, {
+          items: keptItems,
+          materials: keptMaterials.length
+            ? keptMaterials
+            : (learnMoment.materials || []).filter(function (material) {
+                var id = materialIdOf(material);
+                return !(id && scaffolds[id]);
+              })
+        });
+      }
+    }
+  }
+
+  var nextDo = doMoment;
+  var doChanged = false;
+  if (doMoment && Array.isArray(doMoment.items)) {
+    var doItems = doMoment.items.map(function (item) {
+      if (!item || item.kind !== "material" || !item.material) return item;
+      var id = materialIdOf(item.material);
+      var meta = id ? scaffolds[id] : null;
+      if (!meta) return item;
+      if (item.reveal && item.reveal.mode === "details" && item.reveal.defaultOpen === false) {
+        return item;
+      }
+      doChanged = true;
+      if (movedIds.indexOf(id) === -1) movedIds.push(id);
+      return Object.assign({}, item, {
+        reveal: scaffoldRevealBehaviour(meta.disclosure, meta.summary),
+        sourceRef: Object.assign({}, item.sourceRef || {}, {
+          studyFlowScaffold: meta.disclosure
+        })
+      });
+    });
+    if (movedItems.length || doChanged) {
+      doChanged = true;
+      nextDo = Object.assign({}, doMoment, {
+        items: doItems.concat(movedItems),
+        materials: (Array.isArray(doMoment.materials) ? doMoment.materials : []).concat(
+          movedItems.map(function (item) {
+            return item.material;
+          })
+        )
+      });
+    }
+  } else if (doMoment && movedItems.length) {
+    doChanged = true;
+    nextDo = Object.assign({}, doMoment, {
+      items: movedItems,
+      materials: movedItems.map(function (item) {
+        return item.material;
+      })
+    });
+  } else if (!doMoment && movedItems.length) {
+    // No Do moment: keep scaffolds collapsed inside Learn so they are not
+    // fully exposed, without inventing a task surface.
+    learnChanged = true;
+    nextLearn = {
+      kind: "learn",
+      items: (nextLearn && Array.isArray(nextLearn.items) ? nextLearn.items : []).concat(
+        movedItems
+      ),
+      explanatorySteps: (nextLearn && nextLearn.explanatorySteps) || [],
+      materials: (nextLearn && Array.isArray(nextLearn.materials) ? nextLearn.materials : []).concat(
+        movedItems.map(function (item) {
+          return item.material;
+        })
+      )
+    };
+    nextDo = null;
+  }
+
+  if (!learnChanged && !doChanged) {
+    return { learnMoment: learnMoment, doMoment: doMoment, movedIds: [] };
+  }
+
+  return { learnMoment: nextLearn, doMoment: nextDo, movedIds: movedIds };
+}
+
 module.exports = {
-  buildSequenceContext: buildSequenceContext
+  buildSequenceContext: buildSequenceContext,
+  attemptBeforeScaffoldsFromStudyFlow: attemptBeforeScaffoldsFromStudyFlow,
+  relocateAttemptBeforeScaffolds: relocateAttemptBeforeScaffolds,
+  isAttemptDisclosure: isAttemptDisclosure,
+  isScaffoldDisclosure: isScaffoldDisclosure,
+  ATTEMPT_DISCLOSURES: ATTEMPT_DISCLOSURES,
+  SCAFFOLD_DISCLOSURES: SCAFFOLD_DISCLOSURES
 };
 
   };
@@ -14450,6 +14942,424 @@ module.exports = {
 
   };
 
+  __modules["lib/learner-renderer-vnext/learner-artefact-producers.js"] = function (module, exports, __bundleRequire) {
+/**
+ * Shared, product-family-independent discovery of explicitly declared
+ * learner-authored artefacts that persist as constructed text.
+ *
+ * Draft storage remains page-private. Only declared producers may be exposed
+ * through the artefact contract (Journal, cross-resource reference, etc.).
+ */
+"use strict";
+
+var RESPONSE_KIND_CONSTRUCTED_TEXT = "constructed_text";
+var WORKSPACE_PREFIX_LEARNER = "learner-constructed-";
+var WORKSPACE_PREFIX_ASSESSMENT = "assessment-constructed-";
+
+function asText(value) {
+  return value == null ? "" : String(value).trim();
+}
+
+function constructedTextWorkspaceId(elicitationId) {
+  var id = asText(elicitationId);
+  return id ? WORKSPACE_PREFIX_LEARNER + id : "";
+}
+
+function assessmentConstructedWorkspaceId(elicitationId) {
+  var id = asText(elicitationId);
+  return id ? WORKSPACE_PREFIX_ASSESSMENT + id : "";
+}
+
+function isConstructedTextKind(value) {
+  var kind = asText(value).toLowerCase();
+  return !kind || kind === RESPONSE_KIND_CONSTRUCTED_TEXT;
+}
+
+function pushProducer(out, seen, row) {
+  if (!row || typeof row !== "object") return;
+  var elicitationId = asText(row.elicitationId || row.elicitation_id);
+  var workspaceId = asText(row.workspaceId || row.workspace_id);
+  if (!elicitationId || !workspaceId) return;
+  if (seen[elicitationId]) return;
+  seen[elicitationId] = true;
+  out.push({
+    elicitationId: elicitationId,
+    workspaceId: workspaceId,
+    label: asText(row.label) || "Learner constructed response",
+    responseKind: RESPONSE_KIND_CONSTRUCTED_TEXT,
+    source: asText(row.source) || "declared",
+    prompt: asText(row.prompt)
+  });
+}
+
+/**
+ * Explicit page-level declarations (any product family).
+ * Shape: learner_artefacts.produces[] with elicitation_id + response_kind constructed_text.
+ */
+function discoverDeclaredPageProducers(sourcePage) {
+  var out = [];
+  var seen = Object.create(null);
+  var root =
+    sourcePage &&
+    sourcePage.learner_artefacts &&
+    typeof sourcePage.learner_artefacts === "object" &&
+    !Array.isArray(sourcePage.learner_artefacts)
+      ? sourcePage.learner_artefacts
+      : null;
+  var rows = root && Array.isArray(root.produces) ? root.produces : [];
+  rows.forEach(function (row) {
+    if (!row || typeof row !== "object") return;
+    if (!isConstructedTextKind(row.response_kind || row.responseKind)) return;
+    var elicitationId = asText(row.elicitation_id || row.elicitationId);
+    if (!elicitationId) return;
+    var workspaceId =
+      asText(row.workspace_id || row.workspaceId) || constructedTextWorkspaceId(elicitationId);
+    pushProducer(out, seen, {
+      elicitationId: elicitationId,
+      workspaceId: workspaceId,
+      label: asText(row.label) || asText(row.title) || "Learner constructed response",
+      prompt: asText(row.prompt),
+      source: "learner_artefacts"
+    });
+  });
+  return out;
+}
+
+/**
+ * Assessment Pack constructed_performance elicitations (existing contract).
+ */
+function discoverAssessmentPackProducers(sourcePage) {
+  var out = [];
+  var seen = Object.create(null);
+  var evidence = sourcePage && sourcePage.assessment_evidence;
+  var elicitations = evidence && Array.isArray(evidence.elicitations) ? evidence.elicitations : [];
+  elicitations.forEach(function (el) {
+    if (!el || typeof el !== "object") return;
+    var kind = asText(el.delivery && el.delivery.kind).toLowerCase();
+    if (kind !== "constructed_performance") return;
+    var elicitationId = asText(el.elicitation_id || el.elicitationId || "response");
+    if (!elicitationId) return;
+    var prompt = el.delivery && el.delivery.prompt;
+    var promptTitle =
+      prompt && typeof prompt === "object" && !Array.isArray(prompt)
+        ? asText(prompt.title)
+        : "";
+    var promptText =
+      typeof prompt === "string"
+        ? asText(prompt)
+        : prompt && typeof prompt === "object"
+          ? asText(prompt.task || prompt.body || prompt.text)
+          : "";
+    var contributionTitle = asText(
+      el.artefact_contribution &&
+        (el.artefact_contribution.artefact_title || el.artefact_contribution.title)
+    );
+    var label =
+      promptTitle ||
+      contributionTitle ||
+      asText(el.journalable_display_label) ||
+      "Learner constructed response";
+    pushProducer(out, seen, {
+      elicitationId: elicitationId,
+      workspaceId: assessmentConstructedWorkspaceId(elicitationId),
+      label: label,
+      prompt: promptText,
+      source: "assessment_constructed_performance"
+    });
+  });
+  return out;
+}
+
+/**
+ * Situated Task record entries explicitly marked as learner artefacts.
+ */
+function discoverSituatedRecordProducers(sourcePage) {
+  var out = [];
+  var seen = Object.create(null);
+  var sl =
+    sourcePage &&
+    sourcePage.situated_learning &&
+    typeof sourcePage.situated_learning === "object" &&
+    !Array.isArray(sourcePage.situated_learning)
+      ? sourcePage.situated_learning
+      : null;
+  var record = sl && sl.record && typeof sl.record === "object" && !Array.isArray(sl.record) ? sl.record : null;
+  var entries = record && Array.isArray(record.entries) ? record.entries : [];
+  entries.forEach(function (entry) {
+    if (!entry || typeof entry !== "object") return;
+    var artefact =
+      entry.artefact && typeof entry.artefact === "object" && !Array.isArray(entry.artefact)
+        ? entry.artefact
+        : null;
+    if (!artefact) return;
+    if (!isConstructedTextKind(artefact.response_kind || artefact.responseKind)) return;
+    var elicitationId = asText(
+      artefact.elicitation_id || artefact.elicitationId || entry.entry_id || entry.entryId
+    );
+    if (!elicitationId) return;
+    pushProducer(out, seen, {
+      elicitationId: elicitationId,
+      workspaceId: constructedTextWorkspaceId(elicitationId),
+      label: asText(artefact.label) || asText(entry.label) || "Learner constructed response",
+      prompt: asText(artefact.prompt) || asText(entry.prompt),
+      source: "situated_record_artefact"
+    });
+  });
+  return out;
+}
+
+/**
+ * Interactive required_materials response_fulfilment bindings for text_compose.
+ * Only when artefact_elicitation_id is explicitly declared.
+ */
+function discoverInteractiveFulfilmentProducers(sourcePage) {
+  var out = [];
+  var seen = Object.create(null);
+  var activities = Array.isArray(sourcePage && sourcePage.activities) ? sourcePage.activities : [];
+  activities.forEach(function (activity) {
+    if (!activity || typeof activity !== "object") return;
+    var required = Array.isArray(activity.required_materials) ? activity.required_materials : [];
+    required.forEach(function (material) {
+      if (!material || typeof material !== "object") return;
+      var fulfilment =
+        material.response_fulfilment &&
+        typeof material.response_fulfilment === "object" &&
+        !Array.isArray(material.response_fulfilment)
+          ? material.response_fulfilment
+          : null;
+      if (!fulfilment) return;
+      var elicitationId = asText(
+        fulfilment.artefact_elicitation_id || fulfilment.artefactElicitationId
+      );
+      if (!elicitationId) return;
+      var responseKind = asText(fulfilment.response_kind || fulfilment.responseKind).toLowerCase();
+      if (responseKind && responseKind !== "text_compose" && responseKind !== RESPONSE_KIND_CONSTRUCTED_TEXT) {
+        return;
+      }
+      if (!isConstructedTextKind(fulfilment.artefact_response_kind || fulfilment.artefactResponseKind)) {
+        return;
+      }
+      pushProducer(out, seen, {
+        elicitationId: elicitationId,
+        workspaceId: constructedTextWorkspaceId(elicitationId),
+        label:
+          asText(fulfilment.artefact_label || fulfilment.artefactLabel) ||
+          asText(material.title) ||
+          "Learner constructed response",
+        prompt: asText(fulfilment.artefact_prompt || fulfilment.artefactPrompt),
+        source: "interactive_response_fulfilment"
+      });
+    });
+  });
+  return out;
+}
+
+/**
+ * Discover all constructed-text artefact producers declared on a Design Page.
+ * Order: explicit learner_artefacts, Assessment Pack elicitations, Situated
+ * artefact entries, Interactive fulfilment bindings. First declaration wins
+ * per elicitation_id.
+ *
+ * @param {object|null|undefined} sourcePage
+ * @returns {Array<{elicitationId:string, workspaceId:string, label:string, responseKind:string, source:string, prompt:string}>}
+ */
+function discoverConstructedTextProducers(sourcePage) {
+  var out = [];
+  var seen = Object.create(null);
+  if (!sourcePage || typeof sourcePage !== "object") return out;
+
+  function merge(rows) {
+    (Array.isArray(rows) ? rows : []).forEach(function (row) {
+      pushProducer(out, seen, row);
+    });
+  }
+
+  merge(discoverDeclaredPageProducers(sourcePage));
+  merge(discoverAssessmentPackProducers(sourcePage));
+  merge(discoverSituatedRecordProducers(sourcePage));
+  merge(discoverInteractiveFulfilmentProducers(sourcePage));
+  return out;
+}
+
+function findConstructedTextProducer(sourcePage, elicitationId) {
+  var id = asText(elicitationId);
+  if (!id) return null;
+  var rows = discoverConstructedTextProducers(sourcePage);
+  for (var i = 0; i < rows.length; i += 1) {
+    if (rows[i].elicitationId === id) return rows[i];
+  }
+  return null;
+}
+
+var INLINE_BINDABLE_MATERIAL_TYPES = {
+  template: true,
+  prompt_set: true,
+  task_card: true,
+  transfer_prompt: true
+};
+
+/**
+ * Elicitation ids already hosted inside an activity material surface via
+ * response_fulfilment.artefact_elicitation_id (and a matching renderable
+ * material). These must not also emit a page-level journey artefact region.
+ *
+ * @param {object|null|undefined} sourcePage
+ * @returns {Object.<string, true>}
+ */
+function listInlineBoundArtefactElicitationIds(sourcePage) {
+  var placed = Object.create(null);
+  var activities = Array.isArray(sourcePage && sourcePage.activities) ? sourcePage.activities : [];
+  activities.forEach(function (activity) {
+    if (!activity || typeof activity !== "object") return;
+    var materialIds = Object.create(null);
+    var materials = Array.isArray(activity.materials) ? activity.materials : [];
+    materials.forEach(function (material) {
+      if (!material || typeof material !== "object") return;
+      var materialId = asText(material.id || material.material_id || material.materialId);
+      if (!materialId) return;
+      var type = asText(material.type || material.material_type || material.materialType).toLowerCase();
+      if (INLINE_BINDABLE_MATERIAL_TYPES[type]) materialIds[materialId] = true;
+    });
+    var required = Array.isArray(activity.required_materials) ? activity.required_materials : [];
+    required.forEach(function (row) {
+      if (!row || typeof row !== "object") return;
+      var fulfilment =
+        row.response_fulfilment &&
+        typeof row.response_fulfilment === "object" &&
+        !Array.isArray(row.response_fulfilment)
+          ? row.response_fulfilment
+          : null;
+      if (!fulfilment) return;
+      var elicitationId = asText(
+        fulfilment.artefact_elicitation_id || fulfilment.artefactElicitationId
+      );
+      if (!elicitationId) return;
+      var materialId = asText(row.material_id || row.materialId);
+      if (!materialId || !materialIds[materialId]) return;
+      placed[elicitationId] = true;
+    });
+  });
+  return placed;
+}
+
+/**
+ * Workspace requirements for page-level learner artefact producers that are
+ * not already bound into an activity elicitation surface. Situated and
+ * Assessment Pack render through their own pipelines.
+ *
+ * Placement rule: fulfilment-bound activity materials own the elicitation
+ * point; page-level workspaces are only for genuinely unplaced producers
+ * (declaration-only pages, or missing/ambiguous activity association).
+ *
+ * @param {object|null|undefined} sourcePage
+ * @returns {import("./types").WorkspaceRequirement[]}
+ */
+function composeDeclaredLearnerArtefactWorkspaces(sourcePage) {
+  var productId = asText(sourcePage && sourcePage.product_id).toLowerCase();
+  // Assessment Pack and Situated Task already render their capture surfaces.
+  if (productId === "assessment_pack" || productId === "situated_task") return [];
+  if (sourcePage && sourcePage.assessment_evidence) return [];
+  if (
+    sourcePage &&
+    sourcePage.situated_learning &&
+    typeof sourcePage.situated_learning === "object" &&
+    !Array.isArray(sourcePage.situated_learning)
+  ) {
+    return [];
+  }
+
+  var producers = discoverDeclaredPageProducers(sourcePage);
+  var fulfilmentProducers = discoverInteractiveFulfilmentProducers(sourcePage);
+  var inlineBound = listInlineBoundArtefactElicitationIds(sourcePage);
+  var seen = Object.create(null);
+  var rows = [];
+
+  function consider(row) {
+    if (!row || !row.elicitationId) return;
+    if (inlineBound[row.elicitationId]) return;
+    if (seen[row.elicitationId]) return;
+    seen[row.elicitationId] = true;
+    rows.push(row);
+  }
+
+  producers.forEach(consider);
+  // Fulfilment-only declarations still need a capturable surface when their
+  // bound material is absent from activity.materials (generation gap).
+  fulfilmentProducers.forEach(consider);
+
+  return rows.map(function (row, index) {
+    return {
+      mode: "inline",
+      capability: "text_entry",
+      sourceStepNumber: index + 1,
+      instruction: row.prompt || row.label,
+      responseLabel: row.label || "Record your response",
+      prompt: row.prompt || "",
+      responsePartId: row.elicitationId,
+      sourceKind: "learner_artefact",
+      sourceId: row.elicitationId,
+      order: index + 1,
+      rows: 8,
+      persistenceAvailable: true,
+      guidance: "Your draft is saved on this device when possible. It is not submitted.",
+      workspaceId: row.workspaceId,
+      artefactElicitationId: row.elicitationId
+    };
+  });
+}
+
+/**
+ * @param {object|null|undefined} sourcePage
+ * @returns {{ workspaces: import("./types").WorkspaceRequirement[], placement: "page-level"|"unplaced-fallback"|"none", diagnostics: object[] }}
+ */
+function composeDeclaredLearnerArtefactPlacement(sourcePage) {
+  var workspaces = composeDeclaredLearnerArtefactWorkspaces(sourcePage);
+  if (!workspaces.length) {
+    return { workspaces: [], placement: "none", diagnostics: [] };
+  }
+  var activities = Array.isArray(sourcePage && sourcePage.activities) ? sourcePage.activities : [];
+  var hasActivities = activities.some(function (activity) {
+    return activity && typeof activity === "object";
+  });
+  if (!hasActivities) {
+    return { workspaces: workspaces, placement: "page-level", diagnostics: [] };
+  }
+  var diagnostics = workspaces.map(function (workspace) {
+    return {
+      code: "LEARNER_ARTEFACT_UNPLACED_FALLBACK",
+      message:
+        "Learner artefact elicitation " +
+        String(workspace.artefactElicitationId || workspace.responsePartId || "") +
+        " is declared but not bound to an activity material via response_fulfilment.artefact_elicitation_id; rendering after the activity sequence.",
+      elicitationId: String(workspace.artefactElicitationId || workspace.responsePartId || "")
+    };
+  });
+  return {
+    workspaces: workspaces,
+    placement: "unplaced-fallback",
+    diagnostics: diagnostics
+  };
+}
+
+module.exports = {
+  RESPONSE_KIND_CONSTRUCTED_TEXT: RESPONSE_KIND_CONSTRUCTED_TEXT,
+  WORKSPACE_PREFIX_LEARNER: WORKSPACE_PREFIX_LEARNER,
+  WORKSPACE_PREFIX_ASSESSMENT: WORKSPACE_PREFIX_ASSESSMENT,
+  constructedTextWorkspaceId: constructedTextWorkspaceId,
+  assessmentConstructedWorkspaceId: assessmentConstructedWorkspaceId,
+  discoverConstructedTextProducers: discoverConstructedTextProducers,
+  discoverDeclaredPageProducers: discoverDeclaredPageProducers,
+  discoverAssessmentPackProducers: discoverAssessmentPackProducers,
+  discoverSituatedRecordProducers: discoverSituatedRecordProducers,
+  discoverInteractiveFulfilmentProducers: discoverInteractiveFulfilmentProducers,
+  findConstructedTextProducer: findConstructedTextProducer,
+  listInlineBoundArtefactElicitationIds: listInlineBoundArtefactElicitationIds,
+  composeDeclaredLearnerArtefactWorkspaces: composeDeclaredLearnerArtefactWorkspaces,
+  composeDeclaredLearnerArtefactPlacement: composeDeclaredLearnerArtefactPlacement
+};
+
+  };
+
   __modules["lib/learner-renderer-vnext/compose-response-parts.js"] = function (module, exports, __bundleRequire) {
 var types = __bundleRequire("lib/learner-renderer-vnext/response-part-types.js");
 var responseFields = __bundleRequire("lib/dla-response-fields.js");
@@ -14457,6 +15367,7 @@ var parsePromptSetItems = __bundleRequire("lib/learner-renderer-vnext/parse-prom
 var parseTemplateSections = __bundleRequire("lib/learner-renderer-vnext/parse-template-sections.js").parseTemplateSections;
 var normalizeOrderingSemantics =
   __bundleRequire("lib/learner-renderer-vnext/normalize-ordering.js").normalizeOrderingSemantics;
+var artefactProducers = __bundleRequire("lib/learner-renderer-vnext/learner-artefact-producers.js");
 
 var WRITTEN_TASK_STEP_RE =
   /^(Write|Explain|Justify|Record|Summari[sz]e|Draft|Produce|Complete the transfer|Reflect on|Identify another|Complete the transfer prompt)/i;
@@ -14547,6 +15458,50 @@ function requiredMaterialsFromContext(context) {
   return sourceActivity && Array.isArray(sourceActivity.required_materials)
     ? sourceActivity.required_materials
     : [];
+}
+
+function artefactBindingForMaterial(requiredMaterials, materialId) {
+  var id = String(materialId || "").trim();
+  if (!id) return null;
+  var rows = Array.isArray(requiredMaterials) ? requiredMaterials : [];
+  for (var i = 0; i < rows.length; i += 1) {
+    var row = rows[i];
+    if (!row || typeof row !== "object") continue;
+    var rowId = String(row.material_id || row.materialId || "").trim();
+    if (rowId !== id) continue;
+    var fulfilment =
+      row.response_fulfilment &&
+      typeof row.response_fulfilment === "object" &&
+      !Array.isArray(row.response_fulfilment)
+        ? row.response_fulfilment
+        : null;
+    if (!fulfilment) return null;
+    var elicitationId = String(
+      fulfilment.artefact_elicitation_id || fulfilment.artefactElicitationId || ""
+    ).trim();
+    if (!elicitationId) return null;
+    return {
+      elicitationId: elicitationId,
+      workspaceId: artefactProducers.constructedTextWorkspaceId(elicitationId)
+    };
+  }
+  return null;
+}
+
+function applyArtefactBindingToParts(parts, binding) {
+  if (!binding || !Array.isArray(parts) || !parts.length) return parts;
+  var applied = false;
+  return parts.map(function (part) {
+    if (applied) return part;
+    if (!part || part.surfaceKind !== types.SURFACE_KIND.TEXT_ENTRY) return part;
+    applied = true;
+    return Object.assign({}, part, {
+      workspaceId: binding.workspaceId,
+      artefactElicitationId: binding.elicitationId,
+      // Stable elicitation identity for Journal / shared contract (e.g. E1).
+      responsePartId: binding.elicitationId
+    });
+  });
 }
 
 function partsFromTemplateMaterial(activityId, material, options) {
@@ -14769,28 +15724,56 @@ function collectResponseParts(context) {
     var type = String(material.type || "");
 
     if (type === "prompt_set") {
-      parts = parts.concat(partsFromPromptSetMaterial(activityId, material));
+      parts = parts.concat(
+        applyArtefactBindingToParts(
+          partsFromPromptSetMaterial(activityId, material),
+          artefactBindingForMaterial(requiredMaterials, material.id)
+        )
+      );
       return;
     }
 
     if (type === "template") {
       parts = parts.concat(
-        partsFromTemplateMaterial(activityId, material, {
-          requiredMaterials: requiredMaterials,
-          diagnostics: diagnostics
-        })
+        applyArtefactBindingToParts(
+          partsFromTemplateMaterial(activityId, material, {
+            requiredMaterials: requiredMaterials,
+            diagnostics: diagnostics
+          }),
+          artefactBindingForMaterial(requiredMaterials, material.id)
+        )
       );
       return;
     }
 
     if (type === "transfer_prompt") {
       coveredTransfer = true;
-      parts.push(
-        partFromTransferText(activityId, material.id, material.body, {
-          order: 910,
-          provenance: { materialId: material.id, materialType: type }
-        })
+      var transferPart = partFromTransferText(activityId, material.id, material.body, {
+        order: 910,
+        provenance: { materialId: material.id, materialType: type }
+      });
+      var transferBound = applyArtefactBindingToParts(
+        [transferPart],
+        artefactBindingForMaterial(requiredMaterials, material.id)
       );
+      parts.push(transferBound[0]);
+    }
+
+    if (type === "task_card") {
+      var taskCardBinding = artefactBindingForMaterial(requiredMaterials, material.id);
+      if (taskCardBinding) {
+        var taskCardPrompt = String(material.body || material.title || "").trim();
+        var taskCardPart = buildResponsePart(activityId, {
+          sourceKind: types.SOURCE_KIND.TASK_STEP,
+          sourceId: String(material.id || "task-card"),
+          order: 200,
+          label: "Your response",
+          prompt: taskCardPrompt || "Record your response",
+          provenance: { materialId: material.id, materialType: type }
+        });
+        taskCardPart.rows = rowsForPart(taskCardPart);
+        parts = parts.concat(applyArtefactBindingToParts([taskCardPart], taskCardBinding));
+      }
     }
   });
 
@@ -15102,7 +16085,9 @@ function workspaceFromResponsePart(part, options) {
           order: Number(part.order) || 0,
           rows: Number(part.rows) > 0 ? Number(part.rows) : 6,
           persistenceAvailable: true,
-          guidance: String(part.guidance || WORKSPACE_GUIDANCE)
+          guidance: String(part.guidance || WORKSPACE_GUIDANCE),
+          workspaceId: String(part.workspaceId || "").trim() || undefined,
+          artefactElicitationId: String(part.artefactElicitationId || "").trim() || undefined
         }
       };
     case types.SURFACE_KIND.TABLE_ENTRY:
@@ -15449,7 +16434,7 @@ function learnItemRoleForMaterial(material) {
 }
 
 var POST_ATTEMPT_REVEAL_PATTERN =
-  /reveal(?:ed)?\s+after|revealed\s+only\s+after|before\s+consulting\s+(?:its|the)\s+verification/i;
+  /reveal(?:ed)?\s+after|review\s+after|release(?:d)?\s+(?:only\s+)?after|revealed\s+only\s+after|before\s+consulting\s+(?:its|the)\s+verification/i;
 
 /**
  * Material types that can be a post-attempt verified answer, worked correction
@@ -15460,8 +16445,36 @@ var POST_ATTEMPT_REVEAL_SUMMARY = Object.freeze({
   reference_table: "Reveal verified results",
   text: "Reveal verified feedback",
   modelling_note: "Reveal verified feedback",
-  consolidation_summary: "Reveal verified feedback"
+  consolidation_summary: "Reveal verified feedback",
+  sample_output: "Review the example response"
 });
+
+/**
+ * @param {import("./types").LearnerMaterial} material
+ * @returns {boolean}
+ */
+function materialMatchesPostAttemptReveal(material) {
+  var source =
+    String((material && material.title) || "") + "\n" + String((material && material.body) || "");
+  return POST_ATTEMPT_REVEAL_PATTERN.test(source);
+}
+
+/**
+ * Completed answers / worked solutions intended for post-attempt review must
+ * not remain ordinary Learn content. Check-typed materials always defer; other
+ * authored post-attempt feedback defers when the body/title asks learners to
+ * wait until after their attempt.
+ *
+ * @param {import("./types").LearnerMaterial} material
+ * @returns {boolean}
+ */
+function shouldDeferMaterialToCheck(material) {
+  if (!material) return false;
+  if (classification.classifyMaterialPlacement(material) === "check") return true;
+  var type = String((material && material.type) || "");
+  if (!POST_ATTEMPT_REVEAL_SUMMARY[type]) return false;
+  return materialMatchesPostAttemptReveal(material);
+}
 
 /**
  * Voluntary disclosure for a material the author tells learners to consult
@@ -15475,9 +16488,7 @@ function revealBehaviourForPostAttemptMaterial(material) {
   var type = String((material && material.type) || "");
   var summary = POST_ATTEMPT_REVEAL_SUMMARY[type];
   if (!summary) return null;
-  var source =
-    String((material && material.title) || "") + "\n" + String((material && material.body) || "");
-  if (!POST_ATTEMPT_REVEAL_PATTERN.test(source)) return null;
+  if (!materialMatchesPostAttemptReveal(material)) return null;
   return {
     mode: "details",
     defaultOpen: false,
@@ -15806,6 +16817,8 @@ function collectLearnMaterialEntries(modelActivity, groups) {
   var entries = [];
   (Array.isArray(groups.learnBeats) ? groups.learnBeats : []).forEach(function (beat) {
     sortMaterialsByRequiredOrder(beat.materials, materialRank).forEach(function (material) {
+      // Keep Learn free of check-typed and authored post-attempt solutions.
+      if (shouldDeferMaterialToCheck(material)) return;
       entries.push({
         material: material,
         beatFunction: String(beat.sourceFunction || ""),
@@ -16142,6 +17155,7 @@ function composeGenericDoMoment(modelActivity) {
 
   function pushDoMaterial(material, beatFunction) {
     if (!material) return;
+    if (shouldDeferMaterialToCheck(material)) return;
     materialEntries.push({
       material: material,
       beatFunction: String(beatFunction || ""),
@@ -16489,6 +17503,18 @@ function collectActivityCheckAssociation(modelActivity, groups, materialRank) {
       pushMaterial(material, beat.sourceFunction);
     });
   });
+
+  // Archetype binding may park sample_output / post-attempt feedback on Learn
+  // beats (e.g. worked_thinking). Harvest them into Check so completed solutions
+  // are not ordinary pre-task Learn content.
+  (Array.isArray(groups.learnBeats) ? groups.learnBeats : [])
+    .concat(Array.isArray(groups.doBeats) ? groups.doBeats : [])
+    .forEach(function (beat) {
+      sortCheckMaterialsByPriorityAndOrder(beat.materials, materialRank).forEach(function (material) {
+        if (!shouldDeferMaterialToCheck(material)) return;
+        pushMaterial(material, beat.sourceFunction);
+      });
+    });
 
   (Array.isArray(modelActivity.beats) ? modelActivity.beats : []).forEach(function (beat) {
     (Array.isArray(beat.instructions) ? beat.instructions : []).forEach(function (instruction) {
@@ -16885,6 +17911,9 @@ module.exports = {
   consumedBeatFunctions: consumedBeatFunctions,
   splitBeatDoCheckContent: splitBeatDoCheckContent,
   revealBehaviourForCheckMaterial: revealBehaviourForCheckMaterial,
+  revealBehaviourForLearnMaterial: revealBehaviourForLearnMaterial,
+  shouldDeferMaterialToCheck: shouldDeferMaterialToCheck,
+  materialMatchesPostAttemptReveal: materialMatchesPostAttemptReveal,
   learnItemRoleForMaterial: learnItemRoleForMaterial
 };
 
@@ -18138,8 +19167,10 @@ module.exports = {
   };
 
   __modules["lib/learner-renderer-vnext/compose-page-model.js"] = function (module, exports, __bundleRequire) {
-var buildSequenceContext =
-  __bundleRequire("lib/learner-renderer-vnext/compose-sequence-context.js").buildSequenceContext;
+var sequenceContextModule = __bundleRequire("lib/learner-renderer-vnext/compose-sequence-context.js");
+var buildSequenceContext = sequenceContextModule.buildSequenceContext;
+var relocateAttemptBeforeScaffolds =
+  sequenceContextModule.relocateAttemptBeforeScaffolds;
 var composeActivityMoments = __bundleRequire("lib/learner-renderer-vnext/compose-activity-moments.js");
 
 function normalizeActivityIds(model, options) {
@@ -18240,6 +19271,20 @@ function buildComposedPageModel(modelResult, sourcePage, options) {
         transferMoment: transferMoment
       }
     );
+
+    // Sprint 98 M5 Option C: Interactive-only. Relocate LS attempt-before
+    // scaffolds out of open Learn into collapsed Do-associated support.
+    var pageKind = String((model && model.pageKind) || "").trim();
+    if (pageKind === "interactive" || pageKind === "") {
+      var scaffolds =
+        sequenceContext.attemptBeforeScaffoldsByActivityId &&
+        sequenceContext.attemptBeforeScaffoldsByActivityId[activityId];
+      if (scaffolds && Object.keys(scaffolds).length) {
+        var relocated = relocateAttemptBeforeScaffolds(learnMoment, doMoment, scaffolds);
+        learnMoment = relocated.learnMoment;
+        doMoment = relocated.doMoment;
+      }
+    }
 
     if (!orientMoment && !learnMoment && !doMoment && !checkMoment && !transferMoment) {
       beatsFallbackActivityIds.push(activityId);
@@ -21409,10 +22454,16 @@ function renderLearnInstructionItem(item) {
 function renderOptionalDetailsReveal(innerHtml, reveal) {
   if (!reveal || reveal.mode !== "details") return innerHtml;
   var openAttr = reveal.defaultOpen ? " open" : "";
+  var disclosure = String(reveal.studyFlowDisclosure || "").trim();
+  var disclosureAttr = disclosure
+    ? ' data-study-flow-disclosure="' + html.escapeAttribute(disclosure) + '"'
+    : "";
   return (
     '<details class="util-composition-reveal util-prose-measure"' +
     openAttr +
-    ' data-reveal-mode="details">' +
+    ' data-reveal-mode="details"' +
+    disclosureAttr +
+    ">" +
     "<summary>" +
     html.escapeHtml(String(reveal.summary || "Show reference material")) +
     "</summary>" +
@@ -21691,14 +22742,18 @@ function renderLearnerWorkspace(workspace, activityId, options) {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 
+  // Explicit artefact workspace ids (shared constructed-text contract) win over
+  // activity-scoped defaults so Journal / handoff can resolve stably.
+  var explicitWorkspaceId = String(workspace.workspaceId || "").trim();
   var fieldId =
+    explicitWorkspaceId ||
     "learner-workspace-" +
-    String(activityId || "activity")
-      .replace(/[^a-z0-9]+/gi, "-")
-      .replace(/^-+|-+$/g, "")
-      .toLowerCase() +
-    "-" +
-    partSlug;
+      String(activityId || "activity")
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase() +
+      "-" +
+      partSlug;
 
   var guidance = String(workspace.guidance || "").trim();
   var responseLabel = String(workspace.responseLabel || "Record your response").trim();
@@ -26360,6 +27415,7 @@ module.exports = {
 var types = __bundleRequire("lib/learner-renderer-vnext/response-part-types.js");
 var workspaceFromResponsePart =
   __bundleRequire("lib/learner-renderer-vnext/learner-surface-registry.js").workspaceFromResponsePart;
+var artefactProducers = __bundleRequire("lib/learner-renderer-vnext/learner-artefact-producers.js");
 
 var WORKSPACE_OWNER_ID = "situated-record";
 
@@ -26406,7 +27462,11 @@ function normalizeEntries(sourcePage) {
         order: order,
         label: label,
         prompt: prompt,
-        after_section_id: afterSectionId
+        after_section_id: afterSectionId,
+        artefact:
+          entry.artefact && typeof entry.artefact === "object" && !Array.isArray(entry.artefact)
+            ? entry.artefact
+            : null
       };
     })
     .filter(Boolean)
@@ -26416,13 +27476,37 @@ function normalizeEntries(sourcePage) {
     });
 }
 
+function readEntryArtefact(entry) {
+  if (!entry || typeof entry !== "object") return null;
+  var artefact =
+    entry.artefact && typeof entry.artefact === "object" && !Array.isArray(entry.artefact)
+      ? entry.artefact
+      : null;
+  if (!artefact) return null;
+  var responseKind = asText(artefact.response_kind || artefact.responseKind).toLowerCase();
+  if (responseKind && responseKind !== artefactProducers.RESPONSE_KIND_CONSTRUCTED_TEXT) {
+    return null;
+  }
+  var elicitationId = asText(
+    artefact.elicitation_id || artefact.elicitationId || entry.entry_id
+  );
+  if (!elicitationId) return null;
+  return {
+    elicitationId: elicitationId,
+    workspaceId: artefactProducers.constructedTextWorkspaceId(elicitationId),
+    label: asText(artefact.label) || asText(entry.label),
+    prompt: asText(artefact.prompt) || asText(entry.prompt)
+  };
+}
+
 function workspaceFromNormalizedEntry(entry) {
+  var artefact = readEntryArtefact(entry);
   var part = {
     responsePartId: entry.entry_id,
     sourceKind: types.SOURCE_KIND.SITUATED_RECORD_ENTRY,
     sourceId: entry.entry_id,
-    label: entry.label,
-    prompt: entry.prompt || entry.label,
+    label: (artefact && artefact.label) || entry.label,
+    prompt: (artefact && artefact.prompt) || entry.prompt || entry.label,
     guidance: "",
     surfaceKind: types.SURFACE_KIND.TEXT_ENTRY,
     inputModality: types.INPUT_MODALITY.TEXT,
@@ -26431,11 +27515,18 @@ function workspaceFromNormalizedEntry(entry) {
     provenance: {
       ownerKind: "situated_record",
       entryId: entry.entry_id,
-      afterSectionId: entry.after_section_id || ""
-    }
+      afterSectionId: entry.after_section_id || "",
+      artefactElicitationId: artefact ? artefact.elicitationId : ""
+    },
+    workspaceId: artefact ? artefact.workspaceId : "",
+    artefactElicitationId: artefact ? artefact.elicitationId : ""
   };
   var mapped = workspaceFromResponsePart(part, { activityId: WORKSPACE_OWNER_ID });
   if (mapped && mapped.ok && mapped.workspace) {
+    if (artefact) {
+      mapped.workspace.workspaceId = artefact.workspaceId;
+      mapped.workspace.artefactElicitationId = artefact.elicitationId;
+    }
     return mapped.workspace;
   }
   return null;
@@ -26522,6 +27613,7 @@ var renderAssessmentEvidence =
 var sessionFraming = __bundleRequire("lib/learner-renderer-vnext/resolve-session-framing.js");
 var composeSituatedRecord =
   __bundleRequire("lib/learner-renderer-vnext/compose-situated-record-surfaces.js");
+var artefactProducers = __bundleRequire("lib/learner-renderer-vnext/learner-artefact-producers.js");
 var renderWorkspaceGroup =
   __bundleRequire("lib/learner-renderer-vnext/render-composed-moment.js").renderWorkspaceGroup;
 var SUPPORTED_VISUAL_SLOTS = {
@@ -26865,6 +27957,36 @@ function renderSituatedRecordRegion(sourcePage) {
   if (!inner) return "";
   return (
     '<section class="util-situated-record" data-region="situated-record" id="journey-situated-record" aria-label="Record">' +
+    inner +
+    "</section>"
+  );
+}
+
+/**
+ * Dedicated capture surfaces for page-level learner artefact producers that are
+ * not already bound into an activity elicitation point. When activities exist
+ * but no fulfilment binding places the artefact, render as an explicit
+ * unplaced fallback (never silently dropped; never front-loaded before
+ * activities). Does not invent artefacts from undeclared interactions.
+ */
+function renderDeclaredLearnerArtefactsRegion(sourcePage) {
+  var placement = artefactProducers.composeDeclaredLearnerArtefactPlacement(sourcePage);
+  var workspaces = placement.workspaces || [];
+  if (!workspaces.length) return "";
+  var inner = renderWorkspaceGroup(workspaces, "learner-artefact", { omitGuidance: false });
+  if (!inner) return "";
+  var placementKind = String(placement.placement || "page-level");
+  var diagnosticAttr = "";
+  if (placementKind === "unplaced-fallback") {
+    diagnosticAttr =
+      ' data-artefact-placement-diagnostic="LEARNER_ARTEFACT_UNPLACED_FALLBACK"';
+  }
+  return (
+    '<section class="util-learner-artefacts" data-region="learner-artefacts" id="journey-learner-artefacts" data-artefact-placement="' +
+    html.escapeAttribute(placementKind) +
+    '"' +
+    diagnosticAttr +
+    ' aria-label="Your response">' +
     inner +
     "</section>"
   );
@@ -27277,6 +28399,7 @@ function renderPage(model, renderOptions) {
   var orientationHtml = renderOrientationRegion(model, visualAssetOptions);
   var expositionHtml = renderExpositionRegion(model, visualAssetOptions, options.sourcePage);
   var situatedRecordHtml = renderSituatedRecordRegion(options.sourcePage);
+  var learnerArtefactsHtml = renderDeclaredLearnerArtefactsRegion(options.sourcePage);
   var closingHtml = renderClosingParagraph(model.closingParagraph);
   var activities = html.arrayOrEmpty(model.activities).map(function (activity) {
     return renderActivity(activity, activityComposition[activity.id] || null, visualAssetOptions);
@@ -27286,6 +28409,9 @@ function renderPage(model, renderOptions) {
       activities +
       "</section>"
     : "";
+  // Unplaced declared artefacts render after the activity sequence so they
+  // never front-load a late judgement before preparatory activities. When
+  // there are no activities, page-level artefacts still appear before assessment.
   var pageKindNow = String((model && model.pageKind) || "").trim();
   var isAssessmentPage = pageKindNow === "assessment";
   var assessmentHtml = model.assessmentPack
@@ -27325,6 +28451,7 @@ function renderPage(model, renderOptions) {
     situatedRecordHtml,
     closingHtml,
     activityRegion,
+    learnerArtefactsHtml,
     assessmentHtml,
     studyTipsHtml
   ]);
@@ -29318,6 +30445,32 @@ function descriptor(id, label) {
   };
 }
 
+function escapeRegExp(value) {
+  return String(value || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * Resolve a logical section id to the actual element id present in HTML.
+ * Supports unified-shell namespacing (e.g. journey-orient → lj-c1--journey-orient).
+ */
+function resolveNavDestinationId(html, logicalId) {
+  var id = String(logicalId || "").trim();
+  if (!id) return id;
+  var source = String(html || "");
+  var exact = new RegExp(
+    "(?:^|\\s)id\\s*=\\s*[\"']" + escapeRegExp(id) + "[\"']",
+    "i"
+  );
+  if (exact.test(source)) return id;
+  var namespaced = new RegExp(
+    "(?:^|\\s)id\\s*=\\s*[\"']([^\"']*--" + escapeRegExp(id) + ")[\"']",
+    "i"
+  );
+  var match = source.match(namespaced);
+  if (match && match[1]) return match[1];
+  return id;
+}
+
 function hasElementIdAttr(tag) {
   // Do not treat data-section-id / data-activity-id as an element id.
   return /(?:^|\s)id\s*=/i.test(String(tag || ""));
@@ -29334,9 +30487,12 @@ function ensureIdAndSectionMarker(tag, idValue) {
 function prepareJourneySectionMarkers(contentHtml) {
   var content = String(contentHtml || "");
   if (!content) return content;
-  content = content.replace(/<div\b[^>]*\bid="journey-orient"[^>]*>/i, function (tag) {
-    return ensureAttrOnOpenTag(tag, "data-journey-section", "true");
-  });
+  content = content.replace(
+    /<div\b[^>]*\bid="(?:[^"]*--)?journey-orient"[^>]*>/i,
+    function (tag) {
+      return ensureAttrOnOpenTag(tag, "data-journey-section", "true");
+    }
+  );
   content = content.replace(
     /<section\b[^>]*data-region="activities"[^>]*>/i,
     function (tag) {
@@ -29456,7 +30612,7 @@ function collectActivityNavItemsFromHtml(contentHtml) {
   var source = String(contentHtml || "");
   var items = [];
   var articleRe =
-    /<article\b[^>]*\bid="(activity-[^"]+)"[^>]*>[\s\S]*?<h2[^>]*class="util-activity-title"[^>]*>([\s\S]*?)<\/h2>/gi;
+    /<article\b[^>]*\bid="((?:[^"]*--)?activity-[^"]+)"[^>]*>[\s\S]*?<h2[^>]*class="util-activity-title"[^>]*>([\s\S]*?)<\/h2>/gi;
   var match;
   while ((match = articleRe.exec(source)) !== null) {
     items.push({
@@ -29536,9 +30692,9 @@ function collectExpositionNavItemsFromHtml(contentHtml) {
     );
   }
   if (items.length) return items;
-  // Fallback: id already stamped, title from nearby heading may vary.
+  // Fallback: id already stamped (bare or namespaced), title from nearby heading may vary.
   re =
-    /<section\b[^>]*\bid\s*=\s*["']exposition-([^"']+)["'][^>]*>/gi;
+    /<section\b[^>]*\bid\s*=\s*["'](?:[^"']*--)?exposition-([^"']+)["'][^>]*>/gi;
   while ((match = re.exec(source)) !== null) {
     items.push(descriptor("exposition-" + match[1], match[1]));
   }
@@ -29649,7 +30805,9 @@ function collectAssessmentPackNavItems(model, sourceHtml) {
 function collectInteractiveNavItems(contentHtml, model) {
   var source = String(contentHtml || "");
   var items = [];
-  if (/id="journey-orient"|data-region="orientation"/i.test(source)) {
+  if (
+    /id="(?:[^"]*--)?journey-orient"|data-region="orientation"/i.test(source)
+  ) {
     items.push(descriptor("journey-orient", "Orient"));
   }
   var fromModel = collectActivityNavItemsFromModel(model);
@@ -29675,7 +30833,9 @@ function collectInteractiveNavItems(contentHtml, model) {
     }
   }
   if (
-    /id="journey-study-tips"|data-region="study-tips"/i.test(source) ||
+    /id="(?:[^"]*--)?journey-study-tips"|data-region="study-tips"/i.test(
+      source
+    ) ||
     (model && String(model.studyTips || "").trim())
   ) {
     items.push(descriptor("journey-study-tips", "Study tips"));
@@ -29924,7 +31084,17 @@ function enhanceFragmentWithSectionNavigation(fragmentHtml, options) {
       if (built && built.ok) model = built.model;
     } catch (_err) {}
   }
-  var navItems = buildSectionNavItems(prepared, model);
+  var navItems = buildSectionNavItems(prepared, model).map(function (item) {
+    if (!item || !item.id) return item;
+    var resolved = resolveNavDestinationId(prepared, item.id);
+    if (resolved === item.id) return item;
+    return {
+      id: resolved,
+      label: item.label,
+      title: item.title,
+      accessibleLabel: item.accessibleLabel
+    };
+  });
   if (navItems.length < 2) {
     // Drop any leftover chrome when the fragment is not multi-section.
     return prepared;
@@ -29972,7 +31142,11 @@ function installSequentialSectionNav(root) {
   var nav = root.querySelector(".util-journey-nav--sequential");
   if (!nav) return { ok: false, dispose: function () {} };
 
-  var panel = nav.querySelector("#util-journey-all-panel") || nav.querySelector(".util-journey-all-panel");
+  // Prefer the class hook: unified-shell ID namespacing rewrites util-journey-all-panel.
+  var panel =
+    nav.querySelector(".util-journey-all-panel") ||
+    nav.querySelector('[id$="util-journey-all-panel"]') ||
+    nav.querySelector("#util-journey-all-panel");
   var allBtn = nav.querySelector(".util-journey-all-btn");
   var closeBtn = panel ? panel.querySelector(".util-journey-all-close") : null;
   var titlesHost = nav.querySelector(".util-journey-sequential__row");
@@ -30606,6 +31780,7 @@ module.exports = {
 
 var createLearnerDraftStorage = __bundleRequire("lib/learner-renderer-vnext/learner-draft-storage.js").createLearnerDraftStorage;
 var constants = __bundleRequire("lib/learner-renderer-vnext/learner-draft-constants.js");
+var artefactProducers = __bundleRequire("lib/learner-renderer-vnext/learner-artefact-producers.js");
 
 var ARTEFACT_USAGE_REFERENCE = "reference";
 
@@ -31429,9 +32604,11 @@ function renderArtefactReferenceHtml(resolution, referenceDecl, options) {
   var produceLabel = asText(opts.produceLabel);
   var resolvedLabel = asText(resolved.label);
   var refLabel = asText(ref.label);
+  // Consumer reference chrome prefers the authored reference label. Produce
+  // labels remain fallback only (and skip production-metadata descriptions).
   var label =
-    (!isProductionArtefactDescription(produceLabel) ? produceLabel : "") ||
     refLabel ||
+    (!isProductionArtefactDescription(produceLabel) ? produceLabel : "") ||
     (!isProductionArtefactDescription(resolvedLabel) ? resolvedLabel : "") ||
     "Earlier learner response";
   var artefactId = asText(resolved.artefactId || ref.artefactId);
@@ -31721,42 +32898,66 @@ function rewriteHandoffMechanicsText(text, options) {
 }
 
 /**
+ * Shared decision for unified retention help. Wording comes only from
+ * assessment-output.buildAssessmentOutputRetentionHelp.
+ */
+function resolveContextualHandoffHelp(options) {
+  var assessmentOutput = __bundleRequire("lib/learner-renderer-vnext/assessment-output.js");
+  var opts = options && typeof options === "object" ? options : {};
+  if (asText(opts.deliveryContext) !== "unified") {
+    return { ok: true, skipped: "not-unified", helpText: "", refs: [], produces: [] };
+  }
+  var commissionId = asText(opts.commissionId);
+  var refs = listReferencesForCommission(opts.contract, commissionId);
+  var produces = listProducesForCommission(opts.contract, commissionId);
+  if (!refs.length && !produces.length) {
+    return {
+      ok: true,
+      skipped: "no-artefact-relationship",
+      helpText: "",
+      refs: refs,
+      produces: produces,
+      journalListed: false
+    };
+  }
+  var journalListed = commissionProducesJournalListedArtefact(
+    opts.contract,
+    commissionId,
+    opts.journalSpec
+  );
+  return {
+    ok: true,
+    helpText: assessmentOutput.buildAssessmentOutputRetentionHelp({
+      deliveryContext: "unified",
+      isProducer: produces.length > 0,
+      journalListed: journalListed
+    }),
+    refs: refs,
+    produces: produces,
+    journalListed: journalListed
+  };
+}
+
+/**
  * Apply delivery-owned retention guidance to system-owned assessment-output
  * help nodes only. Does not search or rewrite authored educational prose.
  *
  * Standalone publishing does not call this with deliveryContext "unified".
  */
 function applyContextualHandoffGuidance(root, options) {
-  var assessmentOutput = __bundleRequire("lib/learner-renderer-vnext/assessment-output.js");
   var opts = options && typeof options === "object" ? options : {};
   if (!root) {
     return { ok: false, reason: "missing-root", rewritten: 0 };
   }
-  if (asText(opts.deliveryContext) !== "unified") {
-    return { ok: true, rewritten: 0, skipped: "not-unified" };
-  }
-
-  var commissionId = asText(opts.commissionId);
-  var refs = listReferencesForCommission(opts.contract, commissionId);
-  var produces = listProducesForCommission(opts.contract, commissionId);
-  if (!refs.length && !produces.length) {
-    return { ok: true, rewritten: 0, skipped: "no-artefact-relationship" };
+  var decided = resolveContextualHandoffHelp(opts);
+  if (decided.skipped) {
+    return { ok: true, rewritten: 0, skipped: decided.skipped };
   }
   if (typeof root.querySelectorAll !== "function") {
     return { ok: false, reason: "missing-root", rewritten: 0 };
   }
 
-  var journalListed = commissionProducesJournalListedArtefact(
-    opts.contract,
-    commissionId,
-    opts.journalSpec
-  );
-  var helpText = assessmentOutput.buildAssessmentOutputRetentionHelp({
-    deliveryContext: "unified",
-    isProducer: produces.length > 0,
-    journalListed: journalListed
-  });
-
+  var helpText = decided.helpText;
   var nodes = root.querySelectorAll("[data-assessment-output-help]");
   var rewritten = 0;
   var i = 0;
@@ -31776,10 +32977,62 @@ function applyContextualHandoffGuidance(root, options) {
   return {
     ok: true,
     rewritten: rewritten,
-    consumer: refs.length > 0,
-    producer: produces.length > 0,
-    journalListed: journalListed,
+    consumer: decided.refs.length > 0,
+    producer: decided.produces.length > 0,
+    journalListed: !!decided.journalListed,
     systemOwnedOnly: true
+  };
+}
+
+/**
+ * Static-HTML counterpart of applyContextualHandoffGuidance for unified package
+ * assembly. Rewrites only [data-assessment-output-help] system nodes; leaves
+ * authored educational prose untouched. Runtime mount remains a fallback.
+ */
+function applyContextualHandoffGuidanceToHtml(html, options) {
+  var opts = options && typeof options === "object" ? options : {};
+  var source = String(html == null ? "" : html);
+  if (!source) {
+    return { ok: false, reason: "missing-html", rewritten: 0, html: source };
+  }
+  var decided = resolveContextualHandoffHelp(opts);
+  if (decided.skipped) {
+    return {
+      ok: true,
+      rewritten: 0,
+      skipped: decided.skipped,
+      html: source
+    };
+  }
+
+  var helpText = decided.helpText;
+  var escapedHelp = escapeHtml(helpText);
+  var rewritten = 0;
+  var out = source.replace(
+    /<(p|div|span)\b([^>]*\bdata-assessment-output-help\b[^>]*)>([\s\S]*?)<\/\1>/gi,
+    function (_match, tag, attrs) {
+      rewritten += 1;
+      var nextAttrs = String(attrs || "");
+      if (/\bdata-assessment-output-delivery\s*=/.test(nextAttrs)) {
+        nextAttrs = nextAttrs.replace(
+          /\bdata-assessment-output-delivery\s*=\s*(["'])[\s\S]*?\1/i,
+          "data-assessment-output-delivery=$1unified$1"
+        );
+      } else {
+        nextAttrs += ' data-assessment-output-delivery="unified"';
+      }
+      return "<" + tag + nextAttrs + ">" + escapedHelp + "</" + tag + ">";
+    }
+  );
+
+  return {
+    ok: true,
+    rewritten: rewritten,
+    consumer: decided.refs.length > 0,
+    producer: decided.produces.length > 0,
+    journalListed: !!decided.journalListed,
+    systemOwnedOnly: true,
+    html: out
   };
 }
 
@@ -31822,38 +33075,15 @@ function proposeArtefactContractFromLearningJourney(input) {
   });
 
   function constructedWorkspaces(sourcePage) {
-    var out = [];
-    var evidence = sourcePage && sourcePage.assessment_evidence;
-    var elicitations = evidence && Array.isArray(evidence.elicitations) ? evidence.elicitations : [];
-    elicitations.forEach(function (el) {
-      if (!el || typeof el !== "object") return;
-      var kind = asText(el.delivery && el.delivery.kind).toLowerCase();
-      if (kind !== "constructed_performance") return;
-      var elicitationId = asText(el.elicitation_id || el.elicitationId || "response");
-      var workspaceId = "assessment-constructed-" + elicitationId;
-      var prompt = el.delivery && el.delivery.prompt;
-      var promptTitle =
-        prompt && typeof prompt === "object" && !Array.isArray(prompt)
-          ? asText(prompt.title)
-          : "";
-      var contributionTitle = asText(
-        el.artefact_contribution &&
-          (el.artefact_contribution.artefact_title || el.artefact_contribution.title)
-      );
-      // Learner-facing display labels only. response_workspace.intention and
-      // evidence_ask are authoring/production metadata, not Journal headings.
-      var label =
-        promptTitle ||
-        contributionTitle ||
-        asText(el.journalable_display_label) ||
-        "Learner constructed response";
-      out.push({
-        elicitationId: elicitationId,
-        workspaceId: workspaceId,
-        label: label
-      });
+    return artefactProducers.discoverConstructedTextProducers(sourcePage).map(function (row) {
+      return {
+        elicitationId: row.elicitationId,
+        workspaceId: row.workspaceId,
+        label: row.label,
+        responseKind: row.responseKind,
+        source: row.source
+      };
     });
-    return out;
   }
 
   function referencedCommissionIds(commission) {
@@ -31868,8 +33098,8 @@ function proposeArtefactContractFromLearningJourney(input) {
     return found;
   }
 
-  // Consumers that may reference an earlier Assessment Pack constructed artefact
-  // when commission.dependencies explicitly names the producer. Order alone is not enough.
+  // Consumers that may reference an earlier constructed-text artefact when
+  // commission.dependencies explicitly names the producer. Order alone is not enough.
   var supportedArtefactConsumerProducts = {
     assessment_pack: true,
     interactive: true
@@ -31915,10 +33145,25 @@ function proposeArtefactContractFromLearningJourney(input) {
         asText(commission.product_id || commission.productId);
       if (!supportedArtefactConsumerProducts[consumerProduct]) return;
       referencedCommissionIds(commission).forEach(function (producerId) {
+        var producerMeta = byCommission[producerId];
         var producerProduct = resolveCommissionProductId(producerId);
-        // Producer must be an Assessment Pack — workspace ids come from constructed elicitations.
-        if (producerProduct && producerProduct !== "assessment_pack") return;
-        if (!producerProduct && !byCommission[producerId]) return;
+        // Producer must expose at least one declared constructed-text artefact.
+        if (!producerMeta && !producerProduct) return;
+        if (producerMeta && producerMeta.sourcePage) {
+          var producerWorkspaces = constructedWorkspaces(producerMeta.sourcePage);
+          if (!producerWorkspaces.length) {
+            gaps.push({
+              code: "no_constructed_workspace",
+              commissionId: producerId,
+              productId: producerProduct,
+              message:
+                "Producer commission " +
+                producerId +
+                " is named by dependencies but declares no constructed-text learner artefact."
+            });
+            return;
+          }
+        }
         if (!producerPrecedesConsumer(producerId, consumerId)) {
           gaps.push({
             code: "producer_does_not_precede_consumer",
@@ -31941,7 +33186,8 @@ function proposeArtefactContractFromLearningJourney(input) {
           producerId: producerId,
           consumerId: consumerId,
           source: "dependencies",
-          consumerProduct: consumerProduct
+          consumerProduct: consumerProduct,
+          producerProduct: producerProduct
         });
       });
     });
@@ -31951,7 +33197,7 @@ function proposeArtefactContractFromLearningJourney(input) {
     gaps.push({
       code: "no_producer_consumer_pair",
       message:
-        "No produce→reference pair could be derived from commission.dependencies. Supported consumers are Assessment Pack and Interactive when dependencies explicitly name an earlier Assessment Pack commission. Confirm stored dependencies name earlier commission ids, or pass producerCommissionId and consumerCommissionId explicitly. An enabled learning_journey.journal may still declare journal-only producers when their elicitations exist."
+        "No produce→reference pair could be derived from commission.dependencies. Supported consumers are Assessment Pack and Interactive when dependencies explicitly name an earlier commission that declares a constructed-text learner artefact. Confirm stored dependencies name earlier commission ids, or pass producerCommissionId and consumerCommissionId explicitly. An enabled learning_journey.journal may still declare journal-only producers when their elicitations exist."
     });
   }
 
@@ -31998,7 +33244,7 @@ function proposeArtefactContractFromLearningJourney(input) {
         code: "no_constructed_workspace",
         commissionId: pair.producerId,
         message:
-          "Producer Assessment Pack has no constructed_performance elicitation from which to derive a workspaceId."
+          "Producer has no declared constructed-text learner artefact from which to derive a workspaceId."
       });
       return;
     }
@@ -32037,8 +33283,8 @@ function proposeArtefactContractFromLearningJourney(input) {
   });
 
   // Journal-only producers (S97-AD-012): an enabled learning_journey.journal may
-  // declare produces[] for referenced Assessment Pack constructed elicitations even
-  // when no later commission consumes them. Never invent elicitations/workspaces.
+  // declare produces[] for referenced constructed-text artefacts even when no
+  // later commission consumes them. Never invent elicitations/workspaces.
   var journal =
     page &&
     page.learning_journey &&
@@ -32092,19 +33338,6 @@ function proposeArtefactContractFromLearningJourney(input) {
       }
       var producerProduct =
         asText(producer.productId) || resolveCommissionProductId(producerId);
-      if (producerProduct && producerProduct !== "assessment_pack") {
-        gaps.push({
-          code: "journal_producer_not_assessment_pack",
-          entryId: entryId,
-          artefactId: artefactId,
-          commissionId: producerId,
-          message:
-            "Journal producer " +
-            producerId +
-            " must be an Assessment Pack with a constructed_performance elicitation."
-        });
-        return;
-      }
       if (!producer.sourcePage) {
         gaps.push({
           code: "missing_producer_source_page",
@@ -32124,16 +33357,36 @@ function proposeArtefactContractFromLearningJourney(input) {
         }
       }
       if (!matched) {
+        var limitationCode = "journal_producer_elicitation_missing";
+        var limitationMessage =
+          "Journal artefact_id " +
+          artefactId +
+          " does not match a declared constructed-text learner artefact on producer " +
+          producerId;
+        if (producerProduct === "expository") {
+          limitationCode = "journal_producer_family_cannot_capture";
+          limitationMessage +=
+            " (Expository Resources do not capture learner-authored constructed text).";
+        } else if (producerProduct === "interactive") {
+          limitationMessage +=
+            " (Interactive producers must declare learner_artefacts.produces[] or response_fulfilment.artefact_elicitation_id for constructed text).";
+        } else if (producerProduct === "situated_task") {
+          limitationMessage +=
+            " (Situated Task producers must mark the record entry with artefact.elicitation_id and response_kind constructed_text).";
+        } else if (producerProduct === "assessment_pack") {
+          limitationMessage +=
+            " (Assessment Pack producers require a matching constructed_performance elicitation).";
+        } else {
+          limitationMessage += ". No produce declaration was invented.";
+        }
         gaps.push({
-          code: "journal_producer_elicitation_missing",
+          code: limitationCode,
           entryId: entryId,
           artefactId: artefactId,
           commissionId: producerId,
           elicitationId: elicitationId,
-          message:
-            "Journal artefact_id " +
-            artefactId +
-            " does not match a constructed_performance elicitation on the producer Assessment Pack. No produce declaration was invented."
+          productId: producerProduct,
+          message: limitationMessage
         });
         return;
       }
@@ -32195,11 +33448,15 @@ module.exports = {
   acknowledgeJournalNotifications: acknowledgeJournalNotifications,
   buildLearningJourneyNotificationKey: buildLearningJourneyNotificationKey,
   applyContextualHandoffGuidance: applyContextualHandoffGuidance,
+  applyContextualHandoffGuidanceToHtml: applyContextualHandoffGuidanceToHtml,
   rewriteHandoffMechanicsText: rewriteHandoffMechanicsText,
   extractTextFromWorkspaceState: extractTextFromWorkspaceState,
   buildProducerSignpostHtml: buildProducerSignpostHtml,
   formatQuotedTitleList: formatQuotedTitleList,
-  proposeArtefactContractFromLearningJourney: proposeArtefactContractFromLearningJourney
+  proposeArtefactContractFromLearningJourney: proposeArtefactContractFromLearningJourney,
+  discoverConstructedTextProducers: artefactProducers.discoverConstructedTextProducers,
+  constructedTextWorkspaceId: artefactProducers.constructedTextWorkspaceId,
+  RESPONSE_KIND_CONSTRUCTED_TEXT: artefactProducers.RESPONSE_KIND_CONSTRUCTED_TEXT
 };
 
   };
@@ -32286,10 +33543,16 @@ module.exports = Object.assign({}, api, {
   buildLearningJourneyNotificationKey:
     learnerArtefactContract.buildLearningJourneyNotificationKey,
   applyContextualHandoffGuidance: learnerArtefactContract.applyContextualHandoffGuidance,
+  applyContextualHandoffGuidanceToHtml:
+    learnerArtefactContract.applyContextualHandoffGuidanceToHtml,
   listReferencesForCommission: learnerArtefactContract.listReferencesForCommission,
   listProducesForCommission: learnerArtefactContract.listProducesForCommission,
   proposeArtefactContractFromLearningJourney:
-    learnerArtefactContract.proposeArtefactContractFromLearningJourney
+    learnerArtefactContract.proposeArtefactContractFromLearningJourney,
+  discoverConstructedTextProducers:
+    learnerArtefactContract.discoverConstructedTextProducers,
+  constructedTextWorkspaceId: learnerArtefactContract.constructedTextWorkspaceId,
+  RESPONSE_KIND_CONSTRUCTED_TEXT: learnerArtefactContract.RESPONSE_KIND_CONSTRUCTED_TEXT
 });
 
 

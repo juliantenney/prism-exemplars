@@ -1,5 +1,6 @@
 {
-  "generated_at": "2026-11-13T11:12:31.807Z",
+  "generated_at": "2026-11-17T09:09:46.239Z",
+  "current_prism_version": "Beta 0.9",
   "exemplars": [
     {
       "id": "explaining-research-findings-with-confidence",
@@ -30,6 +31,7 @@
       "product_count": 6,
       "duration_minutes": 90,
       "status": "candidate",
+      "created_with_prism_version": "Beta 0.9",
       "launch": "published/index.html",
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
@@ -64,12 +66,52 @@
       "product_count": 5,
       "duration_minutes": 90,
       "status": "candidate",
+      "created_with_prism_version": "Beta 0.9",
       "launch": "published/index.html",
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
       "design_notes": "design-notes.md",
       "path": "journeys/the-decision-that-went-wrong/",
       "manifest": "journeys/the-decision-that-went-wrong/manifest.json"
+    },
+    {
+      "id": "the-slippery-case-of-the-truth",
+      "title": "The Slippery Case of the Truth",
+      "teaching_need": "Learners can recite definitions of truth theories without being able to apply them when evidence conflicts, witnesses disagree, or a case changes underfoot—treating truth as a slogan rather than a disciplined judgement.",
+      "intended_capability": "Form, test and revise a reasoned judgement about a contested case by applying competing accounts of truth, distinguishing evidence from interpretation, and defending a conclusion under uncertainty.",
+      "summary": "A Learning Journey that opens with a contested case judgement, then develops philosophical tools—witnesses and records, correspondence and coherence, pragmatism and competing theories—before the case shifts and learners reconsider and defend their conclusion, supported by a Philosophical Learning Journal.",
+      "primary_pattern": "Case-first philosophical judgement with progressive theoretical tools and mandatory reconsideration",
+      "supporting_patterns": [
+        "Independent initial judgement before theoretical scaffolding",
+        "Progressive introduction of truth theories against a living case",
+        "Distinction between evidence, testimony, record and interpretation",
+        "Comparison of competing accounts of truth (including pragmatism)",
+        "Case change that forces revision rather than confirmation bias",
+        "Learning Journal preserving philosophical reasoning across the sequence"
+      ],
+      "learning_sequence": [
+        "Overview — orientation to the case and journey expectations",
+        "The case opens: Your first judgement — form an initial view before theory arrives",
+        "A witness, a record and a contradiction — weigh conflicting sources",
+        "What makes a claim true? — examine criteria for truth claims",
+        "Reality and coherence: Two accounts of truth — contrast correspondence and coherence",
+        "Pragmatism and the problem of competing theories — consider pragmatic tests and rivalry",
+        "The case changes: Evidence or interpretation? — confront a shifting evidentiary picture",
+        "Reconsidering your judgement — revise earlier conclusions in light of new tools and evidence",
+        "The philosophical case for your conclusion — defend a reasoned ending judgement",
+        "Philosophical Learning Journal — preserve and revisit learner-authored reasoning"
+      ],
+      "transferable_principle": "When learners can name theories without using them, begin with a contested case judgement, introduce theoretical tools only as they become necessary, then force reconsideration when the case or evidence changes—so theory serves judgement rather than replacing it. The crime-case framing is the vehicle; the case-first, reconsider-later logic travels.",
+      "product_count": 8,
+      "duration_minutes": 90,
+      "status": "candidate",
+      "created_with_prism_version": "Beta 0.9",
+      "launch": "published/index.html",
+      "original_brief": "original-brief.md",
+      "adaptation_prompt": "adaptation-prompt.md",
+      "design_notes": "design-notes.md",
+      "path": "journeys/the-slippery-case-of-the-truth/",
+      "manifest": "journeys/the-slippery-case-of-the-truth/manifest.json"
     },
     {
       "id": "understanding-lagrange-multipliers",
@@ -99,6 +141,7 @@
       "product_count": 6,
       "duration_minutes": 90,
       "status": "candidate",
+      "created_with_prism_version": "Beta 0.9",
       "launch": "published/index.html",
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",

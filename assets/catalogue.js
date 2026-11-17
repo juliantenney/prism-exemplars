@@ -41,6 +41,22 @@
     return status ? String(status) : "Unknown";
   }
 
+  function formatCreatedWithLabel(version) {
+    var value = version == null ? "" : String(version).trim();
+    if (!value) return "Created with: Earlier PRISM version (unrecorded)";
+    if (/^PRISM\b/i.test(value)) return "Created with: " + value;
+    return "Created with: PRISM " + value;
+  }
+
+  function applyCurrentPrismVersion(version) {
+    var el = $("current-prism-version");
+    if (!el) return;
+    var value = version == null ? "" : String(version).trim();
+    if (!value) return;
+    el.innerHTML =
+      "Current PRISM version: <strong>" + escapeHtml(value) + "</strong>";
+  }
+
   function statusClass(status) {
     var s = String(status || "").trim().toLowerCase();
     if (s === "validated") return "exemplar-card__status--validated";
@@ -350,6 +366,9 @@
       "<span>Duration: <strong>" +
       escapeHtml(formatDuration(exemplar.duration_minutes)) +
       "</strong></span>" +
+      '<span class="meta-row__version">' +
+      escapeHtml(formatCreatedWithLabel(exemplar.created_with_prism_version)) +
+      "</span>" +
       "</div>" +
       '<div class="exemplar-card__actions">' +
       '<a class="btn btn--primary" href="' +
@@ -493,6 +512,10 @@
     var status = $("catalogue-status");
     var countEl = $("catalogue-count");
     var exemplars = data && Array.isArray(data.exemplars) ? data.exemplars : [];
+
+    if (data && data.current_prism_version) {
+      applyCurrentPrismVersion(data.current_prism_version);
+    }
 
     if (status) status.hidden = true;
     if (!root) return;

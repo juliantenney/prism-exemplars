@@ -91,23 +91,15 @@ From `templates/`:
 
 Set `launch` to `published/index.html`.
 
+Set `created_with_prism_version` to the known PRISM creation version (for example `"Beta 0.9"`), or `null` when unrecorded. Do not infer it from ZIP rebuild date, runtime bundle, or publication date.
+
 ### 9. Regenerate the catalogue
 
-Scan every `journeys/*/manifest.json`. Build `catalogue.json`:
-
-```json
-{
-  "generated_at": "<ISO-8601 timestamp>",
-  "exemplars": [ /* one object per manifest, sorted by title */ ]
-}
+```text
+node scripts/regenerate-catalogue.js
 ```
 
-Each catalogue entry copies the homepage fields from the manifest and adds:
-
-- `path`: `journeys/<id>/`
-- `manifest`: `journeys/<id>/manifest.json`
-
-Do not hand-edit catalogue fields as a second source of truth.
+This rebuilds `catalogue.json` from every `journeys/*/manifest.json` and copies `current_prism_version` from `assets/site.json`. Do not hand-edit catalogue fields as a second source of truth.
 
 ### 10. Homepage asset cache (when CSS/JS changed)
 

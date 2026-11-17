@@ -22,6 +22,7 @@ Longer prose lives in sibling Markdown files referenced by path. Do not duplicat
 | `product_count` | number | yes | Number of constituent products. |
 | `duration_minutes` | number \| null | yes | Approximate total duration in minutes, or `null` if unknown. |
 | `status` | string | yes | `candidate` or `validated`. |
+| `created_with_prism_version` | string \| null | yes | PRISM version used to create the exemplar when reliably known (e.g. `Beta 0.9`). Use `null` when unrecorded. Do not infer from ZIP rebuild date, runtime bundle, or publication date. |
 | `launch` | string | yes | Path to the published entry point, relative to the exemplar folder. Normally `published/index.html`. |
 | `original_brief` | string \| null | yes | Relative path to the original commissioning brief Markdown, or `null` if none exists. |
 | `adaptation_prompt` | string | yes | Relative path to the reusable consultation prompt Markdown. |
@@ -47,14 +48,34 @@ Distinguish clearly:
 - If it is **not** available, set `original_brief` to `null`. Do **not** invent, reconstruct, or paraphrase a brief and call it original.
 - Never present design notes or adaptation prompts as the original brief.
 
+## Site version
+
+Current PRISM version for the homepage is maintained in:
+
+`assets/site.json` → `current_prism_version`
+
+Regenerate the catalogue after changing it:
+
+```text
+node scripts/regenerate-catalogue.js
+```
+
 ## Catalogue index
 
-`catalogue.json` is regenerated from manifests. For each exemplar it includes the flat fields the homepage needs, plus:
+`catalogue.json` is regenerated from manifests and `assets/site.json`. It includes:
 
-- `path` — relative path to the exemplar folder (e.g. `journeys/<id>/`)
-- `manifest` — relative path to `manifest.json`
+- `current_prism_version` — copied from `assets/site.json`
+- one object per exemplar with the flat homepage fields, plus:
+  - `path` — relative path to the exemplar folder (e.g. `journeys/<id>/`)
+  - `manifest` — relative path to `manifest.json`
 
 Do not maintain independent edited copies of the same fields in `catalogue.json`.
+
+Homepage display rules:
+
+- Intro shows **Current PRISM version: {current_prism_version}**
+- Each card shows **Created with: PRISM {created_with_prism_version}** when set
+- When `created_with_prism_version` is `null`/empty, the card shows **Created with: Earlier PRISM version (unrecorded)**
 
 ## Homepage launch URL
 

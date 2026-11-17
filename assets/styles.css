@@ -121,7 +121,48 @@ body {
   font-size: 0.98rem;
 }
 
+.intro-version {
+  margin: 0 0 var(--space-3);
+  font-size: 0.92rem;
+  color: var(--ink-muted);
+}
+
+.intro-version strong {
+  color: var(--ink);
+  font-weight: 700;
+}
+
 .intro p:last-child {
+  margin-bottom: 0;
+}
+
+.intro-notice {
+  margin: var(--space-4) 0 0;
+  padding: var(--space-3) var(--space-4);
+  max-width: var(--measure);
+  border-left: 3px solid var(--line);
+  background: rgba(228, 238, 232, 0.55);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+.intro-notice h2 {
+  margin: 0 0 var(--space-2);
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  color: var(--ink-muted);
+  text-transform: none;
+}
+
+.intro-notice p {
+  margin: 0 0 var(--space-2);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: var(--ink-muted);
+}
+
+.intro-notice p:last-child {
   margin-bottom: 0;
 }
 
@@ -372,6 +413,11 @@ body {
 .meta-row strong {
   color: var(--ink);
   font-weight: 600;
+}
+
+.meta-row__version {
+  flex: 1 1 100%;
+  font-size: 0.84rem;
 }
 
 .exemplar-card__actions {
