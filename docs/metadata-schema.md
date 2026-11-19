@@ -25,6 +25,7 @@ Longer prose lives in sibling Markdown files referenced by path. Do not duplicat
 | `created_with_prism_version` | string \| null | yes | PRISM version used to create the exemplar when reliably known (e.g. `Beta 0.9`). Use `null` when unrecorded. Do not infer from ZIP rebuild date, runtime bundle, or publication date. |
 | `launch` | string | yes | Path to the published entry point, relative to the exemplar folder. Normally `published/index.html`. |
 | `original_brief` | string \| null | yes | Relative path to the original commissioning brief Markdown, or `null` if none exists. |
+| `prism_ready_brief` | string \| null | recommended | Relative path to the current **PRISM-ready** Workflow Basics brief. Preferred for copying into the current application; do not replace `original_brief`. |
 | `adaptation_prompt` | string | yes | Relative path to the reusable consultation prompt Markdown. |
 | `design_notes` | string | recommended | Relative path to retrospective design notes Markdown. |
 
@@ -47,6 +48,7 @@ Distinguish clearly:
 - If an original commissioning brief is available in the supplied materials, save it as `original-brief.md` (or similarly named) and set `original_brief` to that path.
 - If it is **not** available, set `original_brief` to `null`. Do **not** invent, reconstruct, or paraphrase a brief and call it original.
 - Never present design notes or adaptation prompts as the original brief.
+- Keep historical briefs verbatim in `original-brief.md`. Provide a current-form mapping as `prism-ready-brief.md` (referenced by `prism_ready_brief`) using the Workflow Basics field labels in order: Workflow name; Domain; What are you creating?; Learning time; Duration; What should this cover?; Who is this for?; Starting point (optional); Scope and constraints.
 
 ## Site version
 

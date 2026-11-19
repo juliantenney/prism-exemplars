@@ -1,6 +1,8 @@
 # Original commissioning brief
 
-The following is the original brief supplied to PRISM's Learning Journey Requirements step. Wording preserved verbatim.
+The following is the original brief supplied to PRISM's Learning Journey Requirements step. Wording preserved verbatim as historical evidence.
+
+For the current PRISM Workflow Basics form, use [`prism-ready-brief.md`](prism-ready-brief.md).
 
 ## PURPOSE / FOCUS
 

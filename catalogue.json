@@ -1,5 +1,5 @@
 {
-  "generated_at": "2026-11-17T09:09:46.239Z",
+  "generated_at": "2026-11-17T10:42:57.108Z",
   "current_prism_version": "Beta 0.9",
   "exemplars": [
     {
@@ -36,6 +36,7 @@
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
       "design_notes": "design-notes.md",
+      "prism_ready_brief": "prism-ready-brief.md",
       "path": "journeys/explaining-research-findings-with-confidence/",
       "manifest": "journeys/explaining-research-findings-with-confidence/manifest.json"
     },
@@ -71,6 +72,7 @@
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
       "design_notes": "design-notes.md",
+      "prism_ready_brief": "prism-ready-brief.md",
       "path": "journeys/the-decision-that-went-wrong/",
       "manifest": "journeys/the-decision-that-went-wrong/manifest.json"
     },
@@ -110,6 +112,7 @@
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
       "design_notes": "design-notes.md",
+      "prism_ready_brief": "prism-ready-brief.md",
       "path": "journeys/the-slippery-case-of-the-truth/",
       "manifest": "journeys/the-slippery-case-of-the-truth/manifest.json"
     },
@@ -146,6 +149,7 @@
       "original_brief": "original-brief.md",
       "adaptation_prompt": "adaptation-prompt.md",
       "design_notes": "design-notes.md",
+      "prism_ready_brief": "prism-ready-brief.md",
       "path": "journeys/understanding-lagrange-multipliers/",
       "manifest": "journeys/understanding-lagrange-multipliers/manifest.json"
     }

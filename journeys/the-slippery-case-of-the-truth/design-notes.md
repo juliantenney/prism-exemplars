@@ -13,6 +13,7 @@ These notes are **retrospective design commentary**. They are not the original c
 ## Supplied by the user
 
 - **Original commissioning brief:** PURPOSE / FOCUS, LEARNERS / AUDIENCE, LEARNING TIME, DURATION, CONSTRAINTS / ADDITIONAL CONTEXT, and the narrative, philosophical, assessment and pedagogical design sections (verbatim in `original-brief.md`).
+- **PRISM-ready brief:** field mapping for the present Workflow Basics form (`prism-ready-brief.md`). This is an adapted presentation of the same commissioning intent, not a replacement of the historical brief.
 - **Published package** accepted for corpus publication after independent educational QA.
 - **Status:** `candidate` (no validation evidence asserted for this corpus entry beyond acceptance for publication).
 

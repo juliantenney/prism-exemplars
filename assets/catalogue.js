@@ -57,6 +57,75 @@
       "Current PRISM version: <strong>" + escapeHtml(value) + "</strong>";
   }
 
+  var PRISM_READY_FIELD_LABELS = [
+    "Workflow name",
+    "Domain",
+    "What are you creating?",
+    "Learning time",
+    "Duration",
+    "What should this cover?",
+    "Who is this for?",
+    "Starting point (optional)",
+    "Scope and constraints"
+  ];
+
+  function parsePrismReadyFields(markdown) {
+    var source = String(markdown || "").replace(/\r\n/g, "\n");
+    var fields = [];
+    var re = /^##\s+(.+?)\s*$/gm;
+    var matches = [];
+    var match;
+    while ((match = re.exec(source))) {
+      matches.push({ label: match[1].trim(), index: match.index, end: re.lastIndex });
+    }
+    for (var i = 0; i < matches.length; i += 1) {
+      var label = matches[i].label;
+      if (PRISM_READY_FIELD_LABELS.indexOf(label) === -1) continue;
+      var bodyStart = matches[i].end;
+      var bodyEnd = i + 1 < matches.length ? matches[i + 1].index : source.length;
+      var value = source.slice(bodyStart, bodyEnd).replace(/^\n+/, "").replace(/\s+$/, "");
+      fields.push({ label: label, value: value });
+    }
+    return fields;
+  }
+
+  function renderPrismReadyFieldsHtml(fields, idPrefix) {
+    if (!fields.length) {
+      return "<p>No Workflow Basics fields were found in this brief.</p>";
+    }
+    var parts = ['<div class="prism-ready-fields">'];
+    fields.forEach(function (field, index) {
+      var fieldId = idPrefix + "-field-" + index;
+      var feedbackId = fieldId + "-feedback";
+      parts.push('<section class="prism-ready-field">');
+      parts.push('<div class="prism-ready-field__head">');
+      parts.push('<h4 class="prism-ready-field__label">' + escapeHtml(field.label) + "</h4>");
+      parts.push(
+        '<button type="button" class="btn btn--secondary btn--compact" data-copy-from="' +
+          escapeHtml(fieldId) +
+          '" data-copy-feedback="' +
+          escapeHtml(feedbackId) +
+          '">Copy field</button>'
+      );
+      parts.push("</div>");
+      parts.push(
+        '<pre class="prism-ready-field__value" id="' +
+          escapeHtml(fieldId) +
+          '">' +
+          escapeHtml(field.value) +
+          "</pre>"
+      );
+      parts.push(
+        '<p class="prompt-feedback" id="' +
+          escapeHtml(feedbackId) +
+          '" role="status" aria-live="polite"></p>'
+      );
+      parts.push("</section>");
+    });
+    parts.push("</div>");
+    return parts.join("");
+  }
+
   function statusClass(status) {
     var s = String(status || "").trim().toLowerCase();
     if (s === "validated") return "exemplar-card__status--validated";
@@ -249,6 +318,9 @@
     var briefPath = exemplar.original_brief
       ? joinUrl(path, exemplar.original_brief)
       : null;
+    var prismReadyPath = exemplar.prism_ready_brief
+      ? joinUrl(path, exemplar.prism_ready_brief)
+      : null;
     var promptPath = exemplar.adaptation_prompt
       ? joinUrl(path, exemplar.adaptation_prompt)
       : null;
@@ -260,9 +332,37 @@
       : [];
     var briefId = "brief-" + id;
     var briefFeedbackId = "brief-feedback-" + id;
+    var prismReadyId = "prism-ready-" + id;
+    var prismReadyFeedbackId = "prism-ready-feedback-" + id;
     var promptId = "prompt-" + id;
     var promptBodyId = "prompt-body-" + id;
     var promptFeedbackId = "prompt-feedback-" + id;
+
+    var prismReadyBlock = prismReadyPath
+      ? '<details class="disclosure" data-md-src="' +
+        escapeHtml(prismReadyPath) +
+        '" data-md-target="' +
+        escapeHtml(prismReadyId) +
+        '" data-md-mode="prism-ready">' +
+        '<summary class="disclosure__summary">View PRISM-ready brief</summary>' +
+        '<div class="disclosure__body">' +
+        "<p>Copy these fields into PRISM’s current Workflow Basics form. The historical original brief is preserved separately where available.</p>" +
+        '<div class="prompt-toolbar">' +
+        '<button type="button" class="btn btn--secondary" data-copy-from="' +
+        escapeHtml(prismReadyId) +
+        '" data-copy-feedback="' +
+        escapeHtml(prismReadyFeedbackId) +
+        '">Copy whole brief</button>' +
+        '<p class="prompt-feedback" id="' +
+        escapeHtml(prismReadyFeedbackId) +
+        '" role="status" aria-live="polite"></p>' +
+        "</div>" +
+        '<div class="markdown-body" id="' +
+        escapeHtml(prismReadyId) +
+        '" data-raw="" aria-busy="false"></div>' +
+        "</div>" +
+        "</details>"
+      : "";
 
     var briefBlock = briefPath
       ? '<details class="disclosure" data-md-src="' +
@@ -270,8 +370,9 @@
         '" data-md-target="' +
         escapeHtml(briefId) +
         '">' +
-        '<summary class="disclosure__summary">View original brief</summary>' +
+        '<summary class="disclosure__summary">View original historical brief</summary>' +
         '<div class="disclosure__body">' +
+        "<p>Verbatim commissioning brief from the earlier Requirements step. Prefer the PRISM-ready brief above for the current form.</p>" +
         '<div class="prompt-toolbar">' +
         '<button type="button" class="btn btn--secondary" data-copy-from="' +
         escapeHtml(briefId) +
@@ -287,11 +388,7 @@
         '" data-raw="" aria-busy="false"></div>' +
         "</div>" +
         "</details>"
-      : '<details class="disclosure">' +
-        '<summary class="disclosure__summary">View original brief</summary>' +
-        '<div class="disclosure__body"><p>No original commissioning brief is available for this exemplar. ' +
-        "A reconstructed brief is never presented as original.</p></div>" +
-        "</details>";
+      : "";
 
     var promptBlock = promptPath
       ? '<details class="disclosure" data-md-src="' +
@@ -375,6 +472,7 @@
       escapeHtml(launchHref) +
       '">Launch Learning Journey</a>' +
       "</div>" +
+      prismReadyBlock +
       briefBlock +
       promptBlock +
       "</article>"
@@ -407,7 +505,12 @@
       })
       .then(function (text) {
         target.setAttribute("data-raw", text);
-        target.innerHTML = markdownToHtml(text);
+        if (detailsEl.getAttribute("data-md-mode") === "prism-ready") {
+          var fields = parsePrismReadyFields(text);
+          target.innerHTML = renderPrismReadyFieldsHtml(fields, targetId);
+        } else {
+          target.innerHTML = markdownToHtml(text);
+        }
         target.setAttribute("data-loaded", "true");
         target.setAttribute("aria-busy", "false");
       })
@@ -478,7 +581,12 @@
 
       var ensureLoaded = Promise.resolve();
       var details = btn.closest("details");
-      if (details && details.hasAttribute("data-md-src") && body.getAttribute("data-loaded") !== "true") {
+      var needsHostLoad =
+        details &&
+        details.hasAttribute("data-md-src") &&
+        body.classList.contains("markdown-body") &&
+        body.getAttribute("data-loaded") !== "true";
+      if (needsHostLoad) {
         details.open = true;
         loadMarkdownInto(details);
         ensureLoaded = new Promise(function (resolve) {
@@ -494,7 +602,9 @@
       }
 
       ensureLoaded.then(function () {
-        var raw = body.getAttribute("data-raw") || body.textContent || "";
+        var raw = body.classList.contains("prism-ready-field__value")
+          ? body.textContent || ""
+          : body.getAttribute("data-raw") || body.textContent || "";
         return copyText(raw).then(
           function () {
             if (feedback) feedback.textContent = "Copied to clipboard.";

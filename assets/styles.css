@@ -532,6 +532,57 @@ body {
   font-style: italic;
 }
 
+.prism-ready-fields {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.prism-ready-field {
+  margin: 0;
+  padding: var(--space-3);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--paper-elevated);
+}
+
+.prism-ready-field__head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem 0.75rem;
+  margin: 0 0 var(--space-2);
+}
+
+.prism-ready-field__label {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.prism-ready-field__value {
+  margin: 0;
+  padding: 0.7rem 0.8rem;
+  border-radius: 6px;
+  background: #f7f5ef;
+  border: 1px solid #e2ddd2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-body);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--ink);
+  user-select: text;
+}
+
+.btn--compact {
+  min-height: 1.85rem;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.82rem;
+}
+
 .prompt-toolbar {
   display: flex;
   flex-wrap: wrap;

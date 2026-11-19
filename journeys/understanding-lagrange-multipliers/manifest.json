@@ -48,6 +48,8 @@
     "original_brief": "user_supplied",
     "adaptation_prompt": "commentary",
     "design_notes": "commentary",
-    "created_with_prism_version": "user_supplied"
-  }
+    "created_with_prism_version": "user_supplied",
+    "prism_ready_brief": "user_supplied"
+  },
+  "prism_ready_brief": "prism-ready-brief.md"
 }
